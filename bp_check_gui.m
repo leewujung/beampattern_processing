@@ -123,7 +123,13 @@ disp('Processed results loaded');
 
 % Load mic data
 disp('Loading raw mic signals...')
-A = load(fullfile(data.path.mic_data,data.files.mic_data));
+if ~isfield(gui_op,'path_mic_data')  % check for GUI operation
+    gui_op.path_mic_data = data.path.mic_data;
+end
+if ~exist(fullfile(gui_op.base_dir,gui_op.path_mic_data,[data.files.mic_data,'.mat']),'file')  % check if mic_data.mat exist in folder saved in file
+    gui_op.path_mic_data = uigetdir(data.path.mic_data,'Select the directory with mic_data files');
+end
+A = load(fullfile(gui_op.path_mic_data,data.files.mic_data));
 data.mic_data.sig = A.sig;  % save mic signals into the current data structure
 
 % Get current mic config display setting
