@@ -114,7 +114,10 @@ data = load(fullfile(pname,fname));  % load all processed data
 set(handles.edit_proc_file,'String',fname);
 
 gui_op.base_dir = fileparts(fileparts(pname));  % base_dir is one level up from the processed data folder
-cd(gui_op.base_dir);
+if ~exist(gui_op.base_dir,'dir')  % if base_dir doesn't exist
+    gui_op.base_dir = pwd;
+end
+cd(gui_op.base_dir)
 
 gui_op.current_call_idx = 1;
 data.path.proc_data = pname;
