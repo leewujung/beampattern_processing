@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 03-Nov-2015 09:53:50
+% Last Modified by GUIDE v2.5 03-Nov-2015 21:19:50
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -138,6 +138,7 @@ data.mic_data.sig = A.sig;  % save mic signals into the current data structure
 % Get current mic config display setting
 gui_op.mic_config = handles.config_radio_grp.SelectedObject.Tag;  % configuration selection
 gui_op.linlog = handles.loglin_radio_grp.SelectedObject.Tag;  % linear/log selection
+gui_op.interp = handles.interp_radio_grp.SelectedObject.Tag;  % interpolation selection
 
 % Change folder and save stuff
 setappdata(0,'data',data);
@@ -500,7 +501,26 @@ gui_op.linlog = get(eventdata.NewValue, 'Tag');
 setappdata(0,'gui_op',gui_op);
 
 data = getappdata(0,'data');
-if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')
+if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
+    if strcmp(gui_op.mic_config,'rb_cross');
+        plot_bp_cross(handles);  % display beampattern
+    else
+        plot_bp_2d(handles);  % display beampattern
+    end
+end
+
+
+% --- Executes when selected object is changed in interp_radio_grp.
+function interp_radio_grp_SelectionChangedFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in interp_radio_grp 
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+gui_op = getappdata(0,'gui_op');
+gui_op.interp = get(eventdata.NewValue, 'Tag');
+setappdata(0,'gui_op',gui_op);
+
+data = getappdata(0,'data');
+if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
     if strcmp(gui_op.mic_config,'rb_cross');
         plot_bp_cross(handles);  % display beampattern
     else

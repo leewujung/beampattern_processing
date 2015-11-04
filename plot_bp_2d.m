@@ -25,9 +25,17 @@ mic_num = 1:data.mic_data.num_ch_in_file;
 angle_notnanidx = ~ismember(1:data.mic_data.num_ch_in_file,union(ch_ex_manual,ch_ex_sig)) & ch_good_loc;
 az = mic_to_bat_angle(angle_notnanidx,1);
 el = mic_to_bat_angle(angle_notnanidx,2);
+
+maxref = max(call_dB(angle_notnanidx));
 [azq,elq] = meshgrid(min(az):pi/180:max(az),min(el):pi/180:max(el));
-vq = griddata(az,el,call_dB(angle_notnanidx),azq,elq,'natural');
-vq_norm = vq-max(max(vq));
+if strcmp(gui_op.interp,'rb_natural')  % natural neighbor interpolation
+    vq = griddata(az,el,call_dB(angle_notnanidx),azq,elq,'natural');
+elseif strcmp(gui_op.interp,'rb_rbf')  % radial basis function interpolation
+    vq = rbfinterp([azq(:)';elq(:)'],rbfcreate([az(:)';el(:)'],call_dB(angle_notnanidx),'RBFFunction','multiquadrics'));
+    vq = reshape(vq,size(azq));
+end
+vq_norm = vq-maxref;
+
 
 % Plot interpolated beampattern ==========================
 axes(handles.axes_bp);
@@ -64,8 +72,8 @@ hold off
 
 % Plot contour beampattern ==========================
 % Set contour vector
-contour_vec = 0:-3:-60;
 vq_norm_min = min(min(vq_norm));
+contour_vec = 0:-3:floor(vq_norm_min/3)*3;
 cvec_min_idx = find(contour_vec-vq_norm_min<0,1,'first');
 
 % Plot contour beampattern
