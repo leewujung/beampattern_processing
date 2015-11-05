@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 03-Nov-2015 21:19:50
+% Last Modified by GUIDE v2.5 05-Nov-2015 16:00:14
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -140,6 +140,15 @@ gui_op.mic_config = handles.config_radio_grp.SelectedObject.Tag;  % configuratio
 gui_op.linlog = handles.loglin_radio_grp.SelectedObject.Tag;  % linear/log selection
 gui_op.interp = handles.interp_radio_grp.SelectedObject.Tag;  % interpolation selection
 
+% Get default caxis info
+freq_wanted = str2num(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+[~,fidx] = min(abs(freq_wanted-data.proc.call_freq_vec{gui_op.current_call_idx}));
+call_dB = squeeze(data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx}(fidx,:));
+gui_op.caxis_raw_default = [floor(min(min(call_dB))/5)*5, ceil(max(max(call_dB))/5)*5];
+gui_op.caxis_norm_default = [floor(-range(call_dB)/5)*5, 0];
+gui_op.caxis_raw_current = gui_op.caxis_raw_default;
+gui_op.caxis_norm_current = gui_op.caxis_norm_default;
+
 % Change folder and save stuff
 setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
@@ -152,6 +161,7 @@ set(handles.text_current_call1,'String',num2str(gui_op.current_call_idx));
 set(handles.text_current_call2,'String',['/',num2str(length(data.mic_data.call_idx_w_track))]);
 update_bad_call(handles);  % udpate bad call checkbox
 update_ch_ex(handles);     % update list of channel to be excluded
+update_caxis(handles);     % update color axis for bp display
 
 plot_bat_mic_vector;   % plot bat2mic vector
 plot_time_series_in_gui(handles);  % display time series of first call
@@ -159,6 +169,17 @@ if strcmp(gui_op.mic_config,'rb_cross');
     plot_bp_cross(handles);  % display beampattern
 else
     plot_bp_2d(handles);  % display beampattern
+end
+
+
+function update_caxis(handles)
+gui_op = getappdata(0,'gui_op');
+if get(handles.checkbox_norm,'Value')==0  % if "normalized" not checked
+    set(handles.edit_cmin,'String',num2str(gui_op.caxis_raw_current(1)));
+    set(handles.edit_cmax,'String',num2str(gui_op.caxis_raw_current(2)));
+else
+    set(handles.edit_cmin,'String',num2str(gui_op.caxis_norm_current(1)));
+    set(handles.edit_cmax,'String',num2str(gui_op.caxis_norm_current(2)));
 end
 
 
@@ -179,6 +200,7 @@ setappdata(0,'gui_op',gui_op);
 update_bad_call(handles);
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
+update_caxis(handles);     % update color axis for bp display
 move_call_circle_on_track();  % update current call location on track
 
 % Update plot
@@ -209,6 +231,7 @@ setappdata(0,'gui_op',gui_op);
 update_bad_call(handles);
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
+update_caxis(handles);     % update color axis for bp display
 move_call_circle_on_track();  % update current call location on track
 
 % Update plot
@@ -238,6 +261,7 @@ setappdata(0,'gui_op',gui_op);
 update_bad_call(handles);
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
+update_caxis(handles);     % update color axis for bp display
 move_call_circle_on_track();  % update current call location on track
 
 % Update plot
@@ -254,13 +278,6 @@ end
 function update_ch_ex(handles)
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
-% if ~isfield(data.proc,'ch_ex')
-%     data.proc.ch_ex{gui_op.current_call_idx} = [];
-% else
-%     if length(data.proc.ch_ex)<gui_op.current_call_idx
-%         data.proc.ch_ex{gui_op.current_call_idx} = [];
-%     end
-% end
 vv = data.proc.ch_ex{gui_op.current_call_idx};
 
 if ~isempty(vv)
@@ -305,10 +322,14 @@ function checkbox_norm_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 gui_op = getappdata(0,'gui_op');
-if strcmp(gui_op.mic_config,'rb_cross');
-    plot_bp_cross(handles);  % display beampattern
-else
-    plot_bp_2d(handles);  % display beampattern
+data = getappdata(0,'data');
+update_caxis(handles);     % update color axis for bp display
+if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
+    if strcmp(gui_op.mic_config,'rb_cross');
+        plot_bp_cross(handles);  % display beampattern
+    else
+        plot_bp_2d(handles);  % display beampattern
+    end
 end
 % Hint: get(hObject,'Value') returns toggle state of checkbox_norm
 
@@ -358,6 +379,7 @@ function edit_bp_freq_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 gui_op = getappdata(0,'gui_op');
 data = getappdata(0,'data');
+update_caxis(handles);     % update color axis for bp display
 if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
     if strcmp(gui_op.mic_config,'rb_cross');
         plot_bp_cross(handles);  % display beampattern
@@ -531,4 +553,94 @@ if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loade
     else
         plot_bp_2d(handles);  % display beampattern
     end
+end
+
+
+
+function edit_cmin_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_cmin (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+gui_op = getappdata(0,'gui_op');
+if get(handles.checkbox_norm,'Value')==0  % if "normalized" not checked
+    gui_op.caxis_raw_current(1) = str2double(get(hObject,'String'));
+else
+    gui_op.caxis_norm_current(1) = str2double(get(hObject,'String'));
+end
+setappdata(0,'gui_op',gui_op);
+if strcmp(gui_op.mic_config,'rb_cross');
+    plot_bp_cross(handles);  % display beampattern
+else
+    plot_bp_2d(handles);  % display beampattern
+end
+% Hints: get(hObject,'String') returns contents of edit_cmin as text
+%        str2double(get(hObject,'String')) returns contents of edit_cmin as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_cmin_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_cmin (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+function edit_cmax_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_cmax (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+gui_op = getappdata(0,'gui_op');
+if get(handles.checkbox_norm,'Value')==0  % if "normalized" not checked
+    gui_op.caxis_raw_current(2) = str2double(get(hObject,'String'));
+else
+    gui_op.caxis_norm_current(2) = str2double(get(hObject,'String'));
+end
+setappdata(0,'gui_op',gui_op);
+if strcmp(gui_op.mic_config,'rb_cross');
+    plot_bp_cross(handles);  % display beampattern
+else
+    plot_bp_2d(handles);  % display beampattern
+end
+% Hints: get(hObject,'String') returns contents of edit_cmax as text
+%        str2double(get(hObject,'String')) returns contents of edit_cmax as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_cmax_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_cmax (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_peak_db_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_peak_db (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_peak_db as text
+%        str2double(get(hObject,'String')) returns contents of edit_peak_db as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_peak_db_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_peak_db (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end

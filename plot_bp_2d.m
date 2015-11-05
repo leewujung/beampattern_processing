@@ -36,26 +36,25 @@ elseif strcmp(gui_op.interp,'rb_rbf')  % radial basis function interpolation
 end
 vq_norm = vq-maxref;
 
+% Update peak call amplitude
+set(handles.edit_peak_db,'String',sprintf('%2.1f',maxref));
 
 % Plot interpolated beampattern ==========================
 axes(handles.axes_bp);
 if get(handles.checkbox_norm,'Value')==0  % if "normalized" not checked
     himg = imagesc(azq(1,:)/pi*180,elq(:,1)/pi*180,vq);
     set(himg,'AlphaData',~isnan(vq));  % make NaN part transparent
-    c_max = ceil(max(max(vq))/5)*5;
-    c_min = floor(min(min(vq))/5)*5;
     hold on
+    caxis([gui_op.caxis_raw_current(1) gui_op.caxis_raw_current(2)]);
 else
     himg = imagesc(azq(1,:)/pi*180,elq(:,1)/pi*180,vq_norm);
     set(himg,'AlphaData',~isnan(vq));  % make NaN part transparent
-    c_max = ceil(max(max(vq_norm))/5)*5;
-    c_min = floor(min(min(vq_norm))/5)*5;
     hold on
+    caxis([gui_op.caxis_norm_current(1) gui_op.caxis_norm_current(2)]);
 end
 contour(azq/pi*180,elq/pi*180,vq_norm,[0 -3],'w','linewidth',2);
 plot([-90 90],[0 0],'k--');
 plot([0 0],[-90 90],'k--');
-% plot([-90 90 90 -90,-90],[90,90,-90,-90,90],'k-');
 text(az/pi*180,el/pi*180,num2str(mic_num(angle_notnanidx)'),'horizontalalignment','center');
 set(gca,'xtick',-90:30:90,'ytick',-90:30:90);
 xlabel('Azimuth (deg)');
@@ -64,8 +63,6 @@ grid
 axis xy
 axis equal
 axis([-90 90 -90 90]);
-% axis([-180 180 -180 180]);
-caxis([c_min c_max]);
 colormap(handles.axes_bp,parula);
 colorbar
 hold off
