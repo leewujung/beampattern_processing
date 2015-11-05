@@ -356,6 +356,15 @@ function edit_bp_freq_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_bp_freq (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+gui_op = getappdata(0,'gui_op');
+data = getappdata(0,'data');
+if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
+    if strcmp(gui_op.mic_config,'rb_cross');
+        plot_bp_cross(handles);  % display beampattern
+    else
+        plot_bp_2d(handles);  % display beampattern
+    end
+end
 
 % Hints: get(hObject,'String') returns contents of edit_bp_freq as text
 %        str2double(get(hObject,'String')) returns contents of edit_bp_freq as a double
