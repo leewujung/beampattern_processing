@@ -347,13 +347,9 @@ function button_save_Callback(hObject, eventdata, handles)
 % hObject    handle to button_save (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-% data = getappdata(0,'data');
-% 
-% tt = strsplit(data.files.mic_data,'_mic_data_detect');
-% save_fname = sprintf('%s_detect.mat',tt{1});
-% [save_fname,save_pname] = uiputfile('*.mat','Save detection results',[A.pname,'/',save_fname]);
-% save([save_pname,'/',save_fname],'-struct','A');
-
+data = getappdata(0,'data');
+[save_fname,save_pname] = uiputfile('*.mat','Save detection results',fullfile(data.path.proc_data,data.files.proc_data));
+save(fullfile(save_pname,save_fname),'-struct','data');
 
 
 function edit_bp_freq_Callback(hObject, eventdata, handles)
