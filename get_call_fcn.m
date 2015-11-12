@@ -1,4 +1,4 @@
-function data = get_call_fcn(data)
+function data = get_call_fcn(data,varargin)
 % Extract short section around call
 % 
 % dura_flag  whether to use marked call start/end index or not
@@ -9,6 +9,7 @@ function data = get_call_fcn(data)
 % 2015 10 22  change data structure for extracted short call section from
 %             3D mtx to cell to accommodate different call length
 % 2015 10 28  incorporate reading in call duration
+% 2015 11 12  modify plot_opt
 
 if isfield(data.param,'dura_flag')  % duration mark flag set
     dura_flag = data.param.dura_flag;
@@ -16,7 +17,19 @@ else
     dura_flag = 0;  % no duration mark flag
 end
 
-proc_call_num = length(data.mic_data.call_idx_w_track);
+if nargin==2
+    plot_opt = varargin{1};
+else
+    plot_opt = 0;
+end
+
+if plot_opt
+    fig_chk = figure('position',[300 150 550 700]);
+    corder = get(gca,'colororder');
+end
+
+proc_call_num = length(data.mic_data.call_idx_w_track);  % number of processed calls
+
 
 for iC = 1:proc_call_num
 
@@ -94,7 +107,7 @@ for iC = 1:proc_call_num
         [pk_loc_ch(:,1),pk_loc_ch(:,2)] = max(call_long,[],1);  % peak and loc of each channel
         pk_loc_ch(isnan(pk_loc_ch)) = 0;
         pk_loc_ch = flipud(sortrows(pk_loc_ch,1));
-        [~,aa_idx] = min(pk_loc_ch(pk_loc_ch(:,1)>=pk_loc_ch(1,1)*0.8,2));
+        [~,aa_idx] = min(pk_loc_ch(pk_loc_ch(:,1)>=pk_loc_ch(1,1)*0.8,2));  % find the earliest of all loud arrivals
         max_ch_idx = pk_loc_ch(aa_idx,3);  % index of max channel
         pk_idx = pk_loc_ch(aa_idx,2);  % index of peak in the max channel
 
@@ -129,7 +142,8 @@ for iC = 1:proc_call_num
         ch_xcorr = zeros(size(call_long,1)*2-1,num_ch);
         ch_xcorr_env = zeros(size(call_long,1)*2-1,num_ch);
         ch_xcorr_pk_idx = zeros(size(call_long,2),1);
-        for iM=1:num_ch
+        ch_mm = zeros(size(call_long,2),1);
+        for iM=1:num_ch  % going through all channels
             if isnan(data.mic_loc(iM,1))  % if mic location not available
                 ch_xcorr_pk_idx(iM) = NaN;
             else
@@ -137,31 +151,52 @@ for iC = 1:proc_call_num
                 ch_xcorr_env(:,iM) = abs(hilbert(ch_xcorr(:,iM)));
                 maxenv = max(ch_xcorr_env(:,iM));
                 if maxenv>maxenv_top*0.5  % if strong signal consider secondary arrival
-                    [~,ch_xcorr_pk_idx_tmp] = findpeaks(ch_xcorr_env(chk_se_idx,iM),'SortStr','descend','MinPeakDistance',50,'MinPeakHeight',maxenv*0.5);
+                    [ch_mm_tmp,ch_xcorr_pk_idx_tmp] = findpeaks(ch_xcorr_env(chk_se_idx,iM),'SortStr','descend','MinPeakDistance',50,'MinPeakHeight',maxenv*0.5);
                     ch_xcorr_pk_idx_tmp = min(ch_xcorr_pk_idx_tmp);  % take the first arrival in case there is stronger echo
                 else  % if very weak signal don't consider second arrival
-                    [~,ch_xcorr_pk_idx_tmp] = findpeaks(ch_xcorr_env(chk_se_idx,iM),'SortStr','descend','MinPeakDistance',50,'NPeak',1);
+                    [ch_mm_tmp,ch_xcorr_pk_idx_tmp] = findpeaks(ch_xcorr_env(chk_se_idx,iM),'SortStr','descend','MinPeakDistance',50,'NPeak',1);
                 end
                 ch_xcorr_pk_idx_tmp = ch_xcorr_pk_idx_tmp+chk_se_idx(1)-1;
                 if isempty(ch_xcorr_pk_idx_tmp)
                     ch_xcorr_pk_idx(iM) = NaN;
-                    fprintf('Problem in call#%d:%d channel#%d',iC,data.mic_data.call_idx_w_track(iC),iM);
+                    ch_mm(iM) = NaN;
+                    fprintf('%s: Problem in call#%d:%d channel#%d\n',datestr(now,'HH:MM AM'),iC,data.mic_data.call_idx_w_track(iC),iM);
                 else
                     ch_xcorr_pk_idx(iM) = ch_xcorr_pk_idx_tmp(1);
+                    ch_mm(iM) = ch_mm_tmp(1);
                 end
             end
         end
-        shift_gap = max(max(ch_xcorr_env));  % vertical shift gaps for display all channels together
-        shift_gap = floor(shift_gap/0.05)*0.05;
+        
 
-        figure;
-        plot(ch_xcorr_env+repmat((1:num_ch)*shift_gap,length(ch_xcorr_env),1));
-        hold on
-        plot(chk_se_idx(1)*[1 1],[0,shift_gap*(num_ch+1)],'k');
-        plot(chk_se_idx(end)*[1 1],[0,shift_gap*(num_ch+1)],'k');
-        title(sprintf('Call#%d:%d on track',iC,data.mic_data.call_idx_w_track(iC)));
-        pause
-        close
+        if plot_opt
+            % find shift_gap between channels
+            shift_gap = max(max(ch_xcorr_env));  % vertical shift gaps for display all channels together
+            shift_gap = max([floor(shift_gap/0.1)*0.1 0.1]);
+            shift_gap = shift_gap/2;
+            tstamp = (0:size(ch_xcorr_env,1)-1)/data.mic_data.fs*1e3;
+            
+            % plot
+            figure(fig_chk);
+            cla
+            plot(tstamp,ch_xcorr_env+repmat((1:num_ch)*shift_gap,length(ch_xcorr_env),1),'color',corder(1,:));
+            hold on
+            notnanidx = ~isnan(ch_xcorr_pk_idx);
+            plot(tstamp(ch_xcorr_pk_idx(notnanidx)),ch_mm(notnanidx)+(find(notnanidx))*shift_gap,'r.','markersize',10);
+            plot(tstamp(chk_se_idx(1))*[1 1],[0,shift_gap*(num_ch+2)],'k');  % boundary of peak detection
+            plot(tstamp(chk_se_idx(end))*[1 1],[0,shift_gap*(num_ch+2)],'k');
+            if any(~notnanidx)  % highlight channels failing peak detection within boundary
+                for iN = find(~notnanidx)'
+                    plot(tstamp,ch_xcorr_env(:,iN)+iN*shift_gap,'linewidth',2,'color',corder(2,:));
+                end
+            end
+            title(sprintf('Call#%d:%d on track',iC,data.mic_data.call_idx_w_track(iC)));
+            ylim([0,shift_gap*(num_ch+2)]);
+            xlabel('Time (ms)');
+            ylabel('Channel number');
+            pause(0.5)
+            hold off
+        end
         
         % % when the SNR is high, the peaks of xcorr output should fall at approximately the same locations
         % % use this as a criteria to extract the call in channels where signal is present
@@ -212,4 +247,11 @@ data.proc.call_freq_vec{iC} = call_freq_vec;  % frequency vector for call spectr
 data.proc.call_psd_raw_linear{iC} = call_psd;  % spectrum of extracted calls, linear scale
 data.proc.call_psd_raw_dB{iC} = call_psd_dB;   % spectrum of extracted calls, dB scale
 
+
+clearvars -except proc_call_num plot_opt fig_chk corder dura_flag data
+
+end
+
+if plot_opt
+    close(fig_chk);
 end

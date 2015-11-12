@@ -2,11 +2,12 @@
 
 username = getenv('username');
 pname = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing'];
-fname = 'rousettus_20150819_file_match.xlsx';
-% fname = 'rousettus_20150825_file_match.xlsx';
+% fname = 'rousettus_20150819_file_match.xlsx';
+fname = 'rousettus_20150825_file_match.xlsx';
 % fname = 'rousettus_20150910_file_match.xlsx';
 % fname = 'eptesicus_20150911_file_match.xlsx';
-trial_to_proc = 18;
+trial_to_proc = [1:18 20:28];
+chk_indiv_call = 1;
 save_dir = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing\proc_output'];
 if ~exist(save_dir,'dir')
     mkdir(save_dir);
@@ -26,7 +27,7 @@ for tnum = trial_to_proc
     % 0-use default detection stuff (Rousettus)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    data = bp_proc(data,pname,fname,tnum);
+    data = bp_proc(data,pname,fname,tnum,chk_indiv_call);
     ff = [data.files.mic_data,'_bp_proc.mat'];
     save(fullfile(save_dir,ff),'-struct','data');
     

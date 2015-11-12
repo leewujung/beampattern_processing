@@ -1,4 +1,4 @@
-function data = bp_proc(data,pname,fname,tnum)
+function data = bp_proc(data,pname,fname,tnum,chk_indiv_call)
 % Beampattern processing main code
 % all functions transplated from beampattern_gui_v6.m
 % 
@@ -70,22 +70,21 @@ data = time_delay_btwn_bat_mic(data);
 data = mic2bat(data);
 data = bat2mic(data);
 
+% Reserve space for GUI checking
+data.proc.chk_bad_call = ones((length(data.mic_data.call_idx_w_track)),1);  % set all to bad call
+data.proc.ch_ex{length(data.mic_data.call_idx_w_track)} = [];  % channels to be excluded
+
 % Call amplitude calculation and compensation
 disp('Calculating call amplitude...');
 data = get_time_series_around_call_fcn(data);
-data = get_call_fcn(data);
+data = get_call_fcn(data,chk_indiv_call);
 data = compensate_call_dB_fcn(data);
-
-% Reserve space for GUI checking
-data.proc.chk_bad_call = ones((length(data.mic_data.call_idx_w_track)),1);  % if a bad call
-data.proc.ch_ex{length(data.mic_data.call_idx_w_track)} = [];  % channels to be excluded
 
 % Remove raw mic signals and long sections from structure
 data.proc = rmfield(data.proc,'call_align');
 data.proc = rmfield(data.proc,'call_no_align');
 data.mic_data = rmfield(data.mic_data,'sig');
 data = rmfield(data,'match_seq');
-
 
 
 function data = time_delay_btwn_bat_mic(data)
@@ -186,7 +185,7 @@ cut_idx = 1:800;
 pos = cell2mat(bat.bat_pos);
 pos = reshape(pos,length(pos),3,[]);
 pos = pos(cut_idx,:,:);
-track = mean(pos,3);  % raw bat track: mean of three points
+track = nanmean(pos,3);  % raw bat track: mean of three points
 track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
 track_t = -fliplr(0:size(track,1)-1)/data.track.fs;  % Time stamp of the track [sec]
 
