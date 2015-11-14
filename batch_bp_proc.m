@@ -6,8 +6,8 @@ pname = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing'];
 fname = 'rousettus_20150825_file_match.xlsx';
 % fname = 'rousettus_20150910_file_match.xlsx';
 % fname = 'eptesicus_20150911_file_match.xlsx';
-trial_to_proc = 19;
-chk_indiv_call = 1;
+trial_to_proc = 1:28;
+chk_indiv_call = 0;
 save_dir = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing\proc_output'];
 if ~exist(save_dir,'dir')
     mkdir(save_dir);

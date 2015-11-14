@@ -39,16 +39,20 @@ vq_norm = vq-maxref;
 % Update peak call amplitude
 set(handles.edit_peak_db,'String',sprintf('%2.1f',maxref));
 
+% Find indices within measured polygon
+k = boundary(az,el,0);  % outer boundary of all measured points
+in = inpolygon(azq,elq,az(k),el(k));
+
 % Plot interpolated beampattern ==========================
 axes(handles.axes_bp);
 if get(handles.checkbox_norm,'Value')==0  % if "normalized" not checked
     himg = imagesc(azq(1,:)/pi*180,elq(:,1)/pi*180,vq);
-    set(himg,'AlphaData',~isnan(vq));  % make NaN part transparent
+    set(himg,'AlphaData',in);  % make NaN part transparent
     hold on
     caxis([gui_op.caxis_raw_current(1) gui_op.caxis_raw_current(2)]);
 else
     himg = imagesc(azq(1,:)/pi*180,elq(:,1)/pi*180,vq_norm);
-    set(himg,'AlphaData',~isnan(vq));  % make NaN part transparent
+    set(himg,'AlphaData',in);  % make NaN part transparent
     hold on
     caxis([gui_op.caxis_norm_current(1) gui_op.caxis_norm_current(2)]);
 end
@@ -75,6 +79,7 @@ cvec_min_idx = find(contour_vec-vq_norm_min<0,1,'first');
 
 % Plot contour beampattern
 axes(handles.axes_bp_contour);
+vq_norm(~in) = NaN;
 contourf(azq/pi*180,elq/pi*180,vq_norm,contour_vec(1:cvec_min_idx),'w');
 hold on
 plot(az/pi*180,el/pi*180,'wx');
