@@ -192,6 +192,7 @@ for iC = 1:proc_call_num
             end
             title(sprintf('Call#%d:%d on track',iC,data.mic_data.call_idx_w_track(iC)));
             ylim([0,shift_gap*(num_ch+2)]);
+            set(gca,'ytick',(1:num_ch)*shift_gap,'yticklabel',1:num_ch);
             xlabel('Time (ms)');
             ylabel('Channel number');
             pause(0.5)

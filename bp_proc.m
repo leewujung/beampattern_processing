@@ -5,6 +5,7 @@ function data = bp_proc(data,pname,fname,tnum,chk_indiv_call)
 % pname   path to the info matching file
 % fname   filename of the info matching file
 % tnum    trial number to be processed
+% chk_indiv_call  1-plot and check peak detection for each call
 %
 % Wu-Jung Lee | leewujung@gmail.com
 % 2015 10 21  
@@ -12,7 +13,7 @@ function data = bp_proc(data,pname,fname,tnum,chk_indiv_call)
 % 2015 10 27  Change the directory structure so that raw mic data and
 %             detection results can be loaded from different directories
 % 2015 10 28  Enable reading call_start_idx and call_end_idx in the folder
-
+% 2015 11 12  Plot and check the peak detection for each call
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Manual params
