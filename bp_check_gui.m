@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 05-Nov-2015 16:00:14
+% Last Modified by GUIDE v2.5 15-Nov-2015 09:37:33
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -177,7 +177,7 @@ view_track_gui;
 % Update figure and display info for call#1
 set(handles.text_current_call1,'String',num2str(gui_op.current_call_idx));
 set(handles.text_current_call2,'String',['/',num2str(length(data.mic_data.call_idx_w_track))]);
-update_bad_call(handles);  % udpate bad call checkbox
+update_good_call(handles);  % udpate good call checkbox
 update_ch_ex(handles);     % update list of channel to be excluded
 update_caxis(handles);     % update color axis for bp display
 
@@ -216,7 +216,7 @@ setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 
 % Update info
-update_bad_call(handles);
+update_good_call(handles);
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
@@ -247,7 +247,7 @@ setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 
 % Update info
-update_bad_call(handles);
+update_good_call(handles);
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
@@ -277,7 +277,7 @@ setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 
 % Update info
-update_bad_call(handles);
+update_good_call(handles);
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
@@ -428,28 +428,25 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in checkbox_bad_call.
-function checkbox_bad_call_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_bad_call (see GCBO)
+% --- Executes on button press in checkbox_good_call.
+function checkbox_good_call_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_good_call (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
-data.proc.chk_bad_call(gui_op.current_call_idx) = get(hObject,'Value');
+data.proc.chk_good_call(gui_op.current_call_idx) = get(hObject,'Value');
 setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 
 
-function update_bad_call(handles)
+function update_good_call(handles)
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
-% if ~isfield(data.proc,'chk_bad_call') || length(data.proc.chk_bad_call)<gui_op.current_call_idx
-%     data.proc.chk_bad_call(gui_op.current_call_idx) = 0;
-% end
-if data.proc.chk_bad_call(gui_op.current_call_idx)==1
-    set(handles.checkbox_bad_call,'Value',1);
+if data.proc.chk_good_call(gui_op.current_call_idx)==1
+    set(handles.checkbox_good_call,'Value',1);
 else
-    set(handles.checkbox_bad_call,'Value',0);
+    set(handles.checkbox_good_call,'Value',0);
 end
 
 

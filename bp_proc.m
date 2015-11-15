@@ -72,7 +72,7 @@ data = mic2bat(data);
 data = bat2mic(data);
 
 % Reserve space for GUI checking
-data.proc.chk_bad_call = ones((length(data.mic_data.call_idx_w_track)),1);  % set all to bad call
+data.proc.chk_good_call = zeros((length(data.mic_data.call_idx_w_track)),1);  % set all to bad call
 data.proc.ch_ex{length(data.mic_data.call_idx_w_track)} = [];  % channels to be excluded
 
 % Call amplitude calculation and compensation
