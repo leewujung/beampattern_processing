@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 15-Nov-2015 09:37:33
+% Last Modified by GUIDE v2.5 15-Nov-2015 10:52:38
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -664,3 +664,20 @@ function edit_peak_db_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on key press with focus on figure1 and none of its controls.
+function figure1_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.FIGURE)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+switch eventdata.Key
+    case {'numpad4','leftarrow'}
+        button_previous_call_Callback(handles.button_previous_call, eventdata, handles);
+    case {'numpad6','rightarrow'}
+        button_next_call_Callback(handles.button_next_call, eventdata, handles);
+end
+
