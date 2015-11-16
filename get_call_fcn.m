@@ -24,7 +24,7 @@ else
 end
 
 if plot_opt
-    fig_chk = figure('position',[300 150 550 700]);
+    fig_chk = figure('position',[300 50 550 700]);
     corder = get(gca,'colororder');
 end
 

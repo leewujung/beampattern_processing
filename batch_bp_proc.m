@@ -6,9 +6,10 @@ pname = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing'];
 fname = 'rousettus_20150825_file_match.xlsx';
 % fname = 'rousettus_20150910_file_match.xlsx';
 % fname = 'eptesicus_20150911_file_match.xlsx';
-trial_to_proc = 1:28;
+trial_to_proc = 20:28;
 chk_indiv_call = 0;
-save_dir = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing\proc_output'];
+track_cut_idx = 1:800;
+save_dir = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing\proc_output_200ms'];
 if ~exist(save_dir,'dir')
     mkdir(save_dir);
 end
@@ -19,7 +20,7 @@ for tnum = trial_to_proc
     data.param.tempF = 75;  % temperature [deg F]
     data.param.humid = 50;  % humidity (relative in %)
     data.param.extract_call_len = 5;  % [ms]
-    data.param.call_short_len = 0.5;  % desired length of extracted call [sec]
+    data.param.call_short_len = 0.2;  % desired length of extracted call [sec]
     data.param.call_portion_front = 0.2;         % proportion of extracted call before the peak
     data.param.tolernace = 2;
     data.param.tukeywin_proportion = 0.25;  % proportional of tukeywin for call tapering
@@ -27,7 +28,7 @@ for tnum = trial_to_proc
     % 0-use default detection stuff (Rousettus)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    data = bp_proc(data,pname,fname,tnum,chk_indiv_call);
+    data = bp_proc(data,pname,fname,tnum,chk_indiv_call,track_cut_idx);
     ff = [data.files.mic_data,'_bp_proc.mat'];
     save(fullfile(save_dir,ff),'-struct','data');
     

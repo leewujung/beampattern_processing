@@ -38,8 +38,15 @@ for iM=1:data.mic_data.num_ch_in_file  % loop through all mics
     else
         call_receive_time = data.time_of_call_at_mic(call_emission_idx_in_traj,iM);
         [~,call_receive_idx] = min(abs(data.mic_data.sig_t - call_receive_time));
-        call_align(:,iM) = data.mic_data.sig(call_receive_idx + extract_len_idx, iM);
-        call_align_se_idx(iM,:) = call_receive_idx + extract_len_idx([1 end]);
+        want_idx = call_receive_idx + extract_len_idx([1 end]);
+        if want_idx(1)<1
+            want_idx = [1 length(extract_len_idx)];
+        end
+        if want_idx(2)>length(data.mic_data.sig_t)
+            want_idx = length(data.mic_data.sig_t)+[-length(extract_len_idx)+1 0];
+        end
+        call_align(:,iM) = data.mic_data.sig(want_idx(1):want_idx(2), iM);
+        call_align_se_idx(iM,:) = want_idx;
         call_no_align(:,iM) = data.mic_data.sig(data.mic_data.call(curr_call_global_idx).locs + extract_len_idx, iM);
         call_no_align_se_idx(iM,:) = data.mic_data.call(curr_call_global_idx).locs + extract_len_idx([1 end]);
     end

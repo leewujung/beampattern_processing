@@ -1,4 +1,4 @@
-function data = bp_proc(data,pname,fname,tnum,chk_indiv_call)
+function data = bp_proc(data,pname,fname,tnum,chk_indiv_call,track_cut_idx)
 % Beampattern processing main code
 % all functions transplated from beampattern_gui_v6.m
 % 
@@ -53,7 +53,7 @@ disp(['Processing ',data.files.mic_data]);
 
 % Load data and info
 disp('Loading all data and related info...');
-data = load_bat_pos(data);
+data = load_bat_pos(data,track_cut_idx);
 data = load_mic_data(data);
 data = load_mic_info(data);
 data = load_mic_bp_sens(data);
@@ -165,7 +165,7 @@ end
 
 
 function data = load_mic_info(data)
-A = load(fullfile(data.path.mic_info,data.files.mic_info));
+A = load(fullfile(data.path.base_dir,data.path.mic_info,data.files.mic_info));
 data.mic_loc = A.mic_loc(:,[3 1 2]);  % permute to get the x-y-z coordinate right
 data.mic_vec = A.mic_vec(:,[3 1 2]);
 data.mic_vh = A.mic_vh;
@@ -174,17 +174,20 @@ clear A
 
 
 function data = load_mic_bp_sens(data)
-data.mic_sens = load(fullfile(data.path.mic_sens,data.files.mic_sens));
-data.mic_bp = load(fullfile(data.path.mic_bp,data.files.mic_bp));
+data.mic_sens = load(fullfile(data.path.base_dir,data.path.mic_sens,data.files.mic_sens));
+data.mic_bp = load(fullfile(data.path.base_dir,data.path.mic_bp,data.files.mic_bp));
 
 
-function data = load_bat_pos(data)
-bat = load(fullfile(data.path.bat_pos,data.files.bat_pos));
-cut_idx = 1:800;
+function data = load_bat_pos(data,cut_idx)
+bat = load(fullfile(data.path.base_dir,data.path.bat_pos,data.files.bat_pos));
+% cut_idx = 1:800;
 
 % Raw tracks
 pos = cell2mat(bat.bat_pos);
 pos = reshape(pos,length(pos),3,[]);
+if isempty(cut_idx)
+    cut_idx = 1:size(pos,1);
+end
 pos = pos(cut_idx,:,:);
 track = nanmean(pos,3);  % raw bat track: mean of three points
 track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
@@ -246,9 +249,10 @@ mtx_v_norm = mtx_v./repmat(dd,1,3);
 
 
 function data = load_mic_data(data)
-A = load(fullfile(data.path.mic_data,data.files.mic_data),'sig');
-mic_data = load(fullfile(data.path.mic_detect,data.files.mic_detect));
+A = load(fullfile(data.path.base_dir,data.path.mic_data,data.files.mic_data));
+mic_data = load(fullfile(data.path.base_dir,data.path.mic_detect,data.files.mic_detect));
 mic_data.sig = A.sig;
+mic_data.fs = A.fs;
 clear A
 mic_data.sig_t = -fliplr(0:size(mic_data.sig,1)-1)/mic_data.fs;  % time stamps for mic signals [sec]
 data.mic_data = mic_data;
@@ -259,8 +263,8 @@ function data = get_call_on_seg_stuff(data)
 % Get call and idx info
 notnanidx = find(~isnan(data.track.track_interp(:,1)));
 track_notnan_time = data.track.track_interp_time([notnanidx(1) notnanidx(end)]);
-mic_idx_w_track(1) = find((data.mic_data.sig_t-track_notnan_time(1))>0,1,'first');   % start and end idx of the track segment in mic_data
-mic_idx_w_track(2) = find((data.mic_data.sig_t-track_notnan_time(2))>0,1,'first')-1;
+mic_idx_w_track(1) = find((data.mic_data.sig_t-track_notnan_time(1))>=0,1,'first');   % start and end idx of the track segment in mic_data
+mic_idx_w_track(2) = find((data.mic_data.sig_t-track_notnan_time(2))>=0,1,'first')-1;
 call_idx_w_track = find([data.mic_data.call.locs]>mic_idx_w_track(1) &...  % index of call within the selected track segment
                          [data.mic_data.call.locs]<mic_idx_w_track(2));
 call_time = data.mic_data.sig_t([data.mic_data.call(call_idx_w_track).locs]);
