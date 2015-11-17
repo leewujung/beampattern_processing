@@ -163,8 +163,12 @@ gui_op.interp = handles.interp_radio_grp.SelectedObject.Tag;  % interpolation se
 
 % Get default caxis info
 freq_wanted = str2num(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
-[~,fidx] = min(abs(freq_wanted-data.proc.call_freq_vec{gui_op.current_call_idx}));
-call_dB = squeeze(data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx}(fidx,:));
+call_dB = nan(data.mic_data.num_ch_in_file,1);
+for iM=1:data.mic_data.num_ch_in_file
+    freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
+    [~,fidx] = min(abs(freq-freq_wanted));
+    call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+end
 gui_op.caxis_raw_default = [floor(min(min(call_dB))/5)*5, ceil(max(max(call_dB))/5)*5];
 gui_op.caxis_norm_default = [floor(-range(call_dB)/5)*5, 0];
 gui_op.caxis_raw_current = gui_op.caxis_raw_default;
@@ -387,6 +391,9 @@ if isappdata(0,'data')
 end
 if isappdata(0,'gui_op')
     rmappdata(0,'gui_op');
+end
+if isappdata(0,'gui_call_op')
+    rmappdata(0,'gui_call_op');
 end
 if isappdata(0,'track_gui_handles')
     rmappdata(0,'track_gui_handles');

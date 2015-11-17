@@ -5,9 +5,13 @@ function plot_bp_2d(handles)
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
 mic_to_bat_angle = squeeze(data.proc.mic_to_bat_angle(gui_op.current_call_idx,:,:));
-freq_wanted = str2num(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
-[~,fidx] = min(abs(freq_wanted-data.proc.call_freq_vec{gui_op.current_call_idx}));
-call_dB = squeeze(data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx}(fidx,:));
+freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+call_dB = nan(1,data.mic_data.num_ch_in_file);
+for iM=1:data.mic_data.num_ch_in_file
+    freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
+    [~,fidx] = min(abs(freq-freq_wanted));
+    call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+end
 
 % Check for channels to be excluded
 if isempty(data.proc.ch_ex{gui_op.current_call_idx})
