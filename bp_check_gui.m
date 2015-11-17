@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 15-Nov-2015 10:52:38
+% Last Modified by GUIDE v2.5 16-Nov-2015 20:38:22
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -83,6 +83,9 @@ set(hObject,'toolbar','figure');
 
 % Update handles structure
 guidata(hObject, handles);
+
+% Set main GUI handle to appdata
+setappdata(0,'bp_check_gui_handles',handles);
 
 % UIWAIT makes bp_check_gui wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -180,6 +183,7 @@ set(handles.text_current_call2,'String',['/',num2str(length(data.mic_data.call_i
 update_good_call(handles);  % udpate good call checkbox
 update_ch_ex(handles);     % update list of channel to be excluded
 update_caxis(handles);     % update color axis for bp display
+update_edit_call_gui;  % update edit_call_section GUI if exist
 
 plot_bat_mic_vector;   % plot bat2mic vector
 plot_time_series_in_gui(handles);  % display time series of first call
@@ -220,7 +224,8 @@ update_good_call(handles);
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
-move_call_circle_on_track();  % update current call location on track
+move_call_circle_on_track;  % update current call location on track
+update_edit_call_gui;  % update edit_call_section GUI if exist
 
 % Update plot
 plot_bat_mic_vector;   % plot bat2mic vector
@@ -230,7 +235,6 @@ if strcmp(gui_op.mic_config,'rb_cross');
 else
     plot_bp_2d(handles);  % display beampattern
 end
-
 
 
 % --- Executes on button press in button_next_call.
@@ -252,6 +256,7 @@ update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
 move_call_circle_on_track();  % update current call location on track
+update_edit_call_gui;  % update edit_call_section GUI if exist
 
 % Update plot
 plot_bat_mic_vector;   % plot bat2mic vector
@@ -260,6 +265,12 @@ if strcmp(gui_op.mic_config,'rb_cross');
     plot_bp_cross(handles);  % display beampattern
 else
     plot_bp_2d(handles);  % display beampattern
+end
+
+
+function update_edit_call_gui()
+if isappdata(0,'edit_call_gui_handles')
+    edit_call_section;
 end
 
 
@@ -365,6 +376,10 @@ hh2 = getappdata(0,'track_gui_handles');
 if isfield(hh2,'figure1')
     delete(hh2.figure1);
 end
+hh3 = getappdata(0,'edit_call_gui_handles');
+if isfield(hh3,'figure1')
+    delete(hh3.figure1);
+end
 
 % delete appdata
 if isappdata(0,'data')
@@ -375,6 +390,9 @@ if isappdata(0,'gui_op')
 end
 if isappdata(0,'track_gui_handles')
     rmappdata(0,'track_gui_handles');
+end
+if isappdata(0,'edit_call_gui_handles')
+    edit_call_section;
 end
 
 % Hint: delete(hObject) closes the figure
@@ -680,4 +698,13 @@ switch eventdata.Key
     case {'numpad6','rightarrow'}
         button_next_call_Callback(handles.button_next_call, eventdata, handles);
 end
+
+
+
+% --- Executes on button press in button_edit_call_sec.
+function button_edit_call_sec_Callback(hObject, eventdata, handles)
+% hObject    handle to button_edit_call_sec (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+edit_call_section;
 
