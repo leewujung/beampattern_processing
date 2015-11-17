@@ -392,7 +392,10 @@ if isappdata(0,'track_gui_handles')
     rmappdata(0,'track_gui_handles');
 end
 if isappdata(0,'edit_call_gui_handles')
-    edit_call_section;
+    rmappdata(0,'edit_call_gui_handles');
+end
+if isappdata(0,'bp_check_gui_handles')
+    rmappdata(0,'bp_check_gui_handles');
 end
 
 % Hint: delete(hObject) closes the figure
