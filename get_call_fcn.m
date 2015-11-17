@@ -206,7 +206,7 @@ for iC = 1:proc_call_num
             if isnan(ch_xcorr_pk_idx(iM))
                 call_short(:,iM) = nan(call_len_pt,1);
             else
-                match_idx = ch_lags(ch_xcorr_pk_idx(iM))+call_template_pk_shift;
+                match_idx = max([ch_lags(ch_xcorr_pk_idx(iM))+call_template_pk_shift 1]);
                 click_idx = find_click_range(call_long(:,iM),call_long(match_idx,iM),match_idx,...
                                              data.param.click_th,data.param.click_bpf);
                 click_idx(1) = max([click_idx(1) match_idx+call_len_idx(1)-1]);

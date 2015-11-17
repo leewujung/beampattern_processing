@@ -345,7 +345,7 @@ function button_ch_next_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 gui_call_op = getappdata(0,'gui_call_op');
-
+gui_op = getappdata(0,'gui_op');
 tmp = mod(gui_call_op.curr_ch+1,gui_call_op.num_ch_in_file);
 if tmp==0
     gui_call_op.curr_ch = gui_call_op.num_ch_in_file;
@@ -365,7 +365,7 @@ function butto_ch_previous_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 gui_call_op = getappdata(0,'gui_call_op');
-
+gui_op = getappdata(0,'gui_op');
 tmp = mod(gui_call_op.curr_ch-1,gui_call_op.num_ch_in_file);
 if tmp==0
     gui_call_op.curr_ch = gui_call_op.num_ch_in_file;
@@ -384,6 +384,7 @@ function edit_ch_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 gui_call_op = getappdata(0,'gui_call_op');
+gui_op = getappdata(0,'gui_op');
 tmp = mod(str2double(get(hObject,'String')),gui_call_op.num_ch_in_file);
 if tmp==0
     gui_call_op.curr_ch = gui_call_op.num_ch_in_file;
