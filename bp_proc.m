@@ -53,10 +53,10 @@ disp(['Processing ',data.files.mic_data]);
 
 % Load data and info
 disp('Loading all data and related info...');
-data = load_bat_pos(data,track_cut_idx);
-data = load_mic_data(data);
 data = load_mic_info(data);
 data = load_mic_bp_sens(data);
+data = load_bat_pos(data,track_cut_idx);
+data = load_mic_data(data);
 
 
 %% Gather angle and call data
@@ -180,7 +180,6 @@ data.mic_bp = load(fullfile(data.path.base_dir,data.path.mic_bp,data.files.mic_b
 
 function data = load_bat_pos(data,cut_idx)
 bat = load(fullfile(data.path.base_dir,data.path.bat_pos,data.files.bat_pos));
-% cut_idx = 1:800;
 
 % Raw tracks
 pos = cell2mat(bat.bat_pos);
@@ -190,28 +189,58 @@ if isempty(cut_idx)
 end
 pos = pos(cut_idx,:,:);
 track = nanmean(pos,3);  % raw bat track: mean of three points
+track_all3 = mean(pos,3);  % raw bat track with all 3 points presents
 track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
 track_t = -fliplr(0:size(track,1)-1)/data.track.fs;  % Time stamp of the track [sec]
 
+sm_len = 10;
+
+% Find segments
+seg_idx = find_seg(track,sm_len);
+seg_idx_all3 = find_seg(track_all3,sm_len);
+
+seg_idx = min(seg_idx(:)):max(seg_idx(:));
+
 % Smooth track
-notnanidx = find(~isnan(track(:,1)));
-idx = notnanidx(1):notnanidx(end);
 track_sm = nan(size(track));
-track_sm(idx,:) = sm_track(track(idx,:),10);
+track_sm(seg_idx,:) = sm_track(track(seg_idx,:),sm_len);
 
 % Interpolate to finer resolution for aligning calls
 track_int_t_interval = 1e-3;  % interpolate to 1ms interval
 track_int_t = track_t(1):track_int_t_interval:track_t(end);
 track_int = int_track(track_t,track_sm,track_int_t);
 
+% Indicator of where head aim/normal comes from
+marker_indic = zeros(size(track,1),1);
+for iS = 1:size(seg_idx_all3,1)
+    marker_indic(seg_idx_all3(iS,1):seg_idx_all3(iS,2)) = 1;  % 1-head aim derived from markers
+    % 0-head aim derived from track
+end
+
+% Fake head aim from smoothed track
+head_aim_fake = [track_sm(sm_len:end,1:2)-track_sm(1:end-sm_len+1,1:2),zeros(size(track_sm,1)-sm_len+1,1)];
+head_aim_fake = norm_mtx_vec(head_aim_fake);                      
+
+% Fake head normal from mics on the floor
+A=data.mic_loc(data.param.mic_floor_idx,:);
+A0 = bsxfun(@minus,A,mean(A,1)); % Subtract "mean" point
+[~,~,V] = svd(A0,0);
+norm_vec = norm_mtx_vec(V(:,3)');
+
 % Head aim
 head_aim_sm = nan(size(track));
-head_aim_sm(idx,:) = sm_track(bat.head_vec(idx,[3 1 2]),10);
+head_aim_sm(1:end-sm_len+1,:) = head_aim_fake;
+for iS = 1:size(seg_idx_all3,1)
+    head_aim_sm(seg_idx_all3(iS,1):seg_idx_all3(iS,2),:) =...
+        sm_track(norm_mtx_vec(bat.head_vec(seg_idx_all3(iS,1):seg_idx_all3(iS,2),[3 1 2])),sm_len);
+end
 head_aim_int = int_track(track_t,head_aim_sm,track_int_t);
 
 % Head plane normal
-head_n_sm = nan(size(track));
-head_n_sm(idx,:) = sm_track(bat.nn(idx,[3 1 2]),10);
+head_n_sm = repmat(norm_vec,size(track,1),1);
+for iS = 1:size(seg_idx_all3,1)
+    head_n_sm(seg_idx_all3(iS,1):seg_idx_all3(iS,2),:) = sm_track(norm_mtx_vec(bat.nn(seg_idx_all3(iS,1):seg_idx_all3(iS,2),[3 1 2])),sm_len);
+end
 head_n_int = int_track(track_t,head_n_sm,track_int_t);
 
 % Save data
@@ -222,6 +251,8 @@ data.track.track_smooth = track_sm;
 data.track.track_interp = track_int;
 data.track.track_interp_time = track_int_t;
 
+data.track.marker_indicator = marker_indic;
+
 data.head_aim.marked_pos = bat.head_vec(:,[3 1 2]);
 data.head_aim.head_aim_smooth = norm_mtx_vec(head_aim_sm);
 data.head_aim.head_aim_int = norm_mtx_vec(head_aim_int);
@@ -229,6 +260,23 @@ data.head_aim.head_aim_int = norm_mtx_vec(head_aim_int);
 data.head_normal.marked_pos = bat.nn(:,[3 1 2]);
 data.head_normal.head_normal_smooth = norm_mtx_vec(head_n_sm);
 data.head_normal.head_normal_int = norm_mtx_vec(head_n_int);
+
+
+function seg_idx = find_seg(pos,sm_len)
+notnanidx = find(~isnan(pos(:,1)));
+
+% Find index for each track segment
+jump_idx = find(diff(notnanidx)>sm_len);
+jump_idx = jump_idx(:)';
+jump_idx = [0,jump_idx,length(notnanidx)];
+
+if ~(jump_idx(1)==0 && jump_idx(2)==0)
+    seg_idx = nan(length(jump_idx)-1,2);
+    for iJ=1:length(jump_idx)-1
+        seg_idx(iJ,:) = notnanidx([jump_idx(iJ)+1 jump_idx(iJ+1)]);
+    end
+    seg_idx(diff(seg_idx,1,2)<sm_len,:) = [];
+end
 
 
 function v_int = int_track(x,v,x_int)

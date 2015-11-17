@@ -199,14 +199,6 @@ for iC = 1:proc_call_num
             hold off
         end
         
-        % % when the SNR is high, the peaks of xcorr output should fall at approximately the same locations
-        % % use this as a criteria to extract the call in channels where signal is present
-        % [pk_idx_peak_hit,pk_idx_peak_bin] = hist(ch_xcorr_pk_idx,20);
-        % [~,idx] = max(pk_idx_peak_hit);
-        % ch_xcorr_best_idx = pk_idx_peak_bin(idx);
-        %
-        % ch_xcorr_pk_idx(abs(ch_xcorr_pk_idx-ch_xcorr_best_idx)/data.mic_data.fs>tolerance*1e-3) = NaN;  % non-matching -> low SNR or no signal
-        
         % Extract call according to xcorr peak location
         call_short = zeros(call_len_pt,num_ch);
         call_short_se_idx = zeros(num_ch,2);
@@ -215,15 +207,20 @@ for iC = 1:proc_call_num
                 call_short(:,iM) = nan(call_len_pt,1);
             else
                 match_idx = ch_lags(ch_xcorr_pk_idx(iM))+call_template_pk_shift;
-                want_idx = match_idx+call_len_idx([1 end])-1;
-                if want_idx(1)<1
-                    want_idx(1) = 1;
+                click_idx = find_click_range(call_long(:,iM),call_long(match_idx,iM),match_idx,...
+                                             data.param.click_th,data.param.click_bpf);
+                click_idx(1) = max([click_idx(1) match_idx+call_len_idx(1)-1]);
+                if isnan(click_idx(2))||click_idx(2)>match_idx+call_len_idx(end)-1
+                    click_idx(2) = match_idx+call_len_idx(end)-1;
                 end
-                if want_idx(2)>size(call_long,1)
-                    want_idx(2)=size(call_long,1);
+                if click_idx(1)<1
+                    click_idx(1) = 1;
                 end
-                call_short_se_idx(iM,:) = want_idx;
-                want_idx = want_idx(1):want_idx(2);
+                if click_idx(2)>size(call_long,1)
+                    click_idx(2)=size(call_long,1);
+                end
+                call_short_se_idx(iM,:) = click_idx;
+                want_idx = click_idx(1):click_idx(2);
                 call_short(:,iM) = [call_long(want_idx,iM);zeros(call_len_pt-length(want_idx),1)];
             end
         end
