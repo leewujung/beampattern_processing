@@ -200,8 +200,8 @@ for iC = 1:proc_call_num
         end
         
         % Extract call according to xcorr peak location
-        call_short = zeros(call_len_pt,num_ch);
-        call_short_se_idx = zeros(num_ch,2);
+        call_short = nan(call_len_pt,num_ch);
+        call_short_se_idx = nan(num_ch,2);
         for iM=1:num_ch
             if isnan(ch_xcorr_pk_idx(iM))
                 call_short(:,iM) = nan(call_len_pt,1);
@@ -233,17 +233,18 @@ call_short_taper = call_short.*repmat(w,1,size(call_short,2));  % taper call for
 call_fft = fft(call_short_taper);
 call_freq_vec = linspace(0,data.mic_data.fs/2,round((size(call_fft,1)+1)/2));
 call_fft_len = length(call_freq_vec);
-call_psd = 2*abs(call_fft(1:call_fft_len,:)).^2/(length(call_fft)*data.mic_data.fs);
+% call_psd = 2*abs(call_fft(1:call_fft_len,:)).^2/(length(call_fft)*data.mic_data.fs);
+call_psd = 2*abs(call_fft(1:call_fft_len,:)).^2;
 call_psd_dB = 10*log10(call_psd);
 
 
 % Save data ====================================
-data.proc.call_align_short{iC} = call_short;
+data.proc.call_align_short(iC,:) = num2cell(call_short',2);
 data.proc.call_align_short_se_idx(iC,:,:) = call_short_se_idx;
-data.proc.call_fft{iC} = call_fft;  % call spectrum
-data.proc.call_freq_vec{iC} = call_freq_vec;  % frequency vector for call spectrum
-data.proc.call_psd_raw_linear{iC} = call_psd;  % spectrum of extracted calls, linear scale
-data.proc.call_psd_raw_dB{iC} = call_psd_dB;   % spectrum of extracted calls, dB scale
+data.proc.call_fft(iC,:) = num2cell(call_fft',2);  % call spectrum
+data.proc.call_freq_vec(iC,:) = num2cell(repmat(call_freq_vec',1,size(call_short,2))',2);  % frequency vector for call spectrum
+data.proc.call_psd_raw_linear(iC,:) = num2cell(call_psd',2);  % spectrum of extracted calls, linear scale
+data.proc.call_psd_raw_dB(iC,:) = num2cell(call_psd_dB',2);   % spectrum of extracted calls, dB scale
 
 
 clearvars -except proc_call_num plot_opt fig_chk corder dura_flag data
