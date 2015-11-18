@@ -162,7 +162,7 @@ gui_op.linlog = handles.loglin_radio_grp.SelectedObject.Tag;  % linear/log selec
 gui_op.interp = handles.interp_radio_grp.SelectedObject.Tag;  % interpolation selection
 
 % Get default caxis info
-freq_wanted = str2num(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
 call_dB = nan(data.mic_data.num_ch_in_file,1);
 for iM=1:data.mic_data.num_ch_in_file
     freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};

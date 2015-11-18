@@ -189,94 +189,96 @@ if isempty(cut_idx)
 end
 pos = pos(cut_idx,:,:);
 track = nanmean(pos,3);  % raw bat track: mean of three points
-track_all3 = mean(pos,3);  % raw bat track with all 3 points presents
-track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
+% track_all3 = mean(pos,3);  % raw bat track with all 3 points presents
+% track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
 track_t = -fliplr(0:size(track,1)-1)/data.track.fs;  % Time stamp of the track [sec]
 
-sm_len = 10;
-
 % Find segments
+sm_len = 10;
 seg_idx = find_seg(track,sm_len);
-seg_idx_all3 = find_seg(track_all3,sm_len);
+% seg_idx_all3 = find_seg(track_all3,sm_len);
+seg_idx_tip = find_seg(pos(:,:,1),sm_len);
+seg_idx_left = find_seg(pos(:,:,2),sm_len);
+seg_idx_right = find_seg(pos(:,:,3),sm_len);
 
-seg_idx = min(seg_idx(:)):max(seg_idx(:));
+% Smooth track and marker pos
+track_sm = sm_track(track(:,[3 1 2]),sm_len,seg_idx);
+tip = sm_track(pos(:,[3 1 2],1),sm_len,seg_idx_tip);
+left = sm_track(pos(:,[3 1 2],2),sm_len,seg_idx_left);
+right = sm_track(pos(:,[3 1 2],3),sm_len,seg_idx_right);
 
-% Smooth track
-track_sm = nan(size(track));
-track_sm(seg_idx,:) = sm_track(track(seg_idx,:),sm_len);
+head_aim = norm_mtx_vec(tip-(left+right)/2);
+head_n = norm_mtx_vec(cross(tip-left,tip-right));
 
 % Interpolate to finer resolution for aligning calls
 track_int_t_interval = 1e-3;  % interpolate to 1ms interval
 track_int_t = track_t(1):track_int_t_interval:track_t(end);
 track_int = int_track(track_t,track_sm,track_int_t);
+head_aim_int = int_track(track_t,head_aim,track_int_t);
+head_n_int = int_track(track_t,head_n,track_int_t);
 
 % Indicator of where head aim/normal comes from
-marker_indic = zeros(size(track,1),1);
-for iS = 1:size(seg_idx_all3,1)
-    marker_indic(seg_idx_all3(iS,1):seg_idx_all3(iS,2)) = 1;  % 1-head aim derived from markers
-    % 0-head aim derived from track
-end
+marker_indic = zeros(size(track_int,1),1);
+marker_indic(~isnan(head_aim_int)) = 1;  % 1-head aim derived from interpolated marker locations
+                                         % 0-head aim derived from track
 
 % Fake head aim from smoothed track
 head_aim_fake = [track_sm(sm_len:end,1:2)-track_sm(1:end-sm_len+1,1:2),zeros(size(track_sm,1)-sm_len+1,1)];
 head_aim_fake = norm_mtx_vec(head_aim_fake);                      
+head_aim_fake_int = int_track(track_t(1:end-sm_len+1),head_aim_fake,track_int_t);
 
 % Fake head normal from mics on the floor
-A=data.mic_loc(data.param.mic_floor_idx,:);
+A = data.mic_loc(data.param.mic_floor_idx,:);
 A0 = bsxfun(@minus,A,mean(A,1)); % Subtract "mean" point
 [~,~,V] = svd(A0,0);
 norm_vec = norm_mtx_vec(V(:,3)');
 
-% Head aim
-head_aim_sm = nan(size(track));
-head_aim_sm(1:end-sm_len+1,:) = head_aim_fake;
-for iS = 1:size(seg_idx_all3,1)
-    head_aim_sm(seg_idx_all3(iS,1):seg_idx_all3(iS,2),:) =...
-        sm_track(norm_mtx_vec(bat.head_vec(seg_idx_all3(iS,1):seg_idx_all3(iS,2),[3 1 2])),sm_len);
-end
-head_aim_int = int_track(track_t,head_aim_sm,track_int_t);
-
-% Head plane normal
-head_n_sm = repmat(norm_vec,size(track,1),1);
-for iS = 1:size(seg_idx_all3,1)
-    head_n_sm(seg_idx_all3(iS,1):seg_idx_all3(iS,2),:) = sm_track(norm_mtx_vec(bat.nn(seg_idx_all3(iS,1):seg_idx_all3(iS,2),[3 1 2])),sm_len);
-end
-head_n_int = int_track(track_t,head_n_sm,track_int_t);
+% Fill in gaps for head aim and head normal
+nanidx = isnan(head_aim_int(:,1));
+head_aim_int(nanidx,:) = head_aim_fake_int(nanidx,:);
+head_n_int(nanidx,:) = repmat(norm_vec,sum(nanidx),1);
 
 % Save data
 data.track.marked_pos = pos(:,[3 1 2],:);
+data.track.smooth_len = sm_len;
 data.track.track_raw = track;
 data.track.track_raw_time = track_t;
 data.track.track_smooth = track_sm;
+data.track.tip_smooth = tip;
+data.track.left_smooth = left;
+data.track.right_smooth = right;
 data.track.track_interp = track_int;
 data.track.track_interp_time = track_int_t;
 
 data.track.marker_indicator = marker_indic;
 
-data.head_aim.marked_pos = bat.head_vec(:,[3 1 2]);
-data.head_aim.head_aim_smooth = norm_mtx_vec(head_aim_sm);
-data.head_aim.head_aim_int = norm_mtx_vec(head_aim_int);
+data.head_aim.head_aim_smooth = head_aim;
+data.head_aim.head_aim_int = head_aim_int;
 
-data.head_normal.marked_pos = bat.nn(:,[3 1 2]);
-data.head_normal.head_normal_smooth = norm_mtx_vec(head_n_sm);
-data.head_normal.head_normal_int = norm_mtx_vec(head_n_int);
+data.head_normal.head_normal_smooth = head_n;
+data.head_normal.head_normal_int = head_n_int;
+
 
 
 function seg_idx = find_seg(pos,sm_len)
-notnanidx = find(~isnan(pos(:,1)));
+notnan = ~isnan(pos(:,1));
+idx_nan = find(diff(notnan)~=0)+1;
 
-% Find index for each track segment
-jump_idx = find(diff(notnanidx)>sm_len);
-jump_idx = jump_idx(:)';
-jump_idx = [0,jump_idx,length(notnanidx)];
+g = normpdf(-sm_len:sm_len,0,sm_len);
+w = conv(double(notnan),g,'same');
+idx = find(diff(w~=0)~=0)+1;
+idx_up = find(diff(w~=0)>0)+1;
 
-if ~(jump_idx(1)==0 && jump_idx(2)==0)
-    seg_idx = nan(length(jump_idx)-1,2);
-    for iJ=1:length(jump_idx)-1
-        seg_idx(iJ,:) = notnanidx([jump_idx(iJ)+1 jump_idx(iJ+1)]);
-    end
-    seg_idx(diff(seg_idx,1,2)<sm_len,:) = [];
+[~,iconv] = min(abs(repmat(idx',length(idx_nan),1)-repmat(idx_nan,1,length(idx))),[],1);
+if idx_up(1)~=idx(1)  % if the first up edge not at the beginning
+    seg_idx = [1;idx_nan(iconv)];
+else
+    seg_idx = idx_nan(iconv);
 end
+if mod(length(seg_idx),2)~=0  % if the last down edge not at the end
+    seg_idx = [seg_idx;length(notnan)];
+end
+seg_idx = reshape(seg_idx,2,[])';
 
 
 function v_int = int_track(x,v,x_int)
@@ -285,11 +287,13 @@ v_int(:,2) = interp1(x,v(:,2),x_int);
 v_int(:,3) = interp1(x,v(:,3),x_int);
 
 
-function v_sm = sm_track(v,sm_len)
-v_sm(:,1) = smooth(v(:,1),sm_len);
-v_sm(:,2) = smooth(v(:,2),sm_len);
-v_sm(:,3) = smooth(v(:,3),sm_len);
-
+function v_sm = sm_track(v,sm_len,seg_idx)
+v_sm = nan(size(v));
+for iS=1:size(seg_idx,1)
+    v_sm(seg_idx(iS,1):seg_idx(iS,2),1) = smooth(v(seg_idx(iS,1):seg_idx(iS,2),1),sm_len);
+    v_sm(seg_idx(iS,1):seg_idx(iS,2),2) = smooth(v(seg_idx(iS,1):seg_idx(iS,2),2),sm_len);
+    v_sm(seg_idx(iS,1):seg_idx(iS,2),3) = smooth(v(seg_idx(iS,1):seg_idx(iS,2),3),sm_len);
+end
 
 function mtx_v_norm = norm_mtx_vec(mtx_v)
 dd = diag(sqrt(mtx_v*mtx_v'));
