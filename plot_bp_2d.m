@@ -86,7 +86,8 @@ axes(handles.axes_bp_contour);
 vq_norm(~in) = NaN;
 contourf(azq/pi*180,elq/pi*180,vq_norm,contour_vec(1:cvec_min_idx),'w');
 hold on
-plot(az/pi*180,el/pi*180,'wx');
+plot(az/pi*180,el/pi*180,'k+');
+plot(az/pi*180,el/pi*180,'ro');
 
 xlabel('Azimuth (deg)');
 ylabel('Elevation (deg)');
