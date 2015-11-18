@@ -1,10 +1,11 @@
-function data = bp_proc(data,pname,fname,tnum)
+function data = bp_proc(data,pname,fname,tnum,chk_indiv_call,track_cut_idx)
 % Beampattern processing main code
 % all functions transplated from beampattern_gui_v6.m
 % 
 % pname   path to the info matching file
 % fname   filename of the info matching file
 % tnum    trial number to be processed
+% chk_indiv_call  1-plot and check peak detection for each call
 %
 % Wu-Jung Lee | leewujung@gmail.com
 % 2015 10 21  
@@ -12,7 +13,7 @@ function data = bp_proc(data,pname,fname,tnum)
 % 2015 10 27  Change the directory structure so that raw mic data and
 %             detection results can be loaded from different directories
 % 2015 10 28  Enable reading call_start_idx and call_end_idx in the folder
-
+% 2015 11 12  Plot and check the peak detection for each call
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Manual params
@@ -52,10 +53,10 @@ disp(['Processing ',data.files.mic_data]);
 
 % Load data and info
 disp('Loading all data and related info...');
-data = load_bat_pos(data);
-data = load_mic_data(data);
 data = load_mic_info(data);
 data = load_mic_bp_sens(data);
+data = load_bat_pos(data,track_cut_idx);
+data = load_mic_data(data);
 
 
 %% Gather angle and call data
@@ -70,22 +71,21 @@ data = time_delay_btwn_bat_mic(data);
 data = mic2bat(data);
 data = bat2mic(data);
 
+% Reserve space for GUI checking
+data.proc.chk_good_call = zeros((length(data.mic_data.call_idx_w_track)),1);  % set all to bad call
+data.proc.ch_ex{length(data.mic_data.call_idx_w_track)} = [];  % channels to be excluded
+
 % Call amplitude calculation and compensation
 disp('Calculating call amplitude...');
 data = get_time_series_around_call_fcn(data);
-data = get_call_fcn(data);
+data = get_call_fcn(data,chk_indiv_call);
 data = compensate_call_dB_fcn(data);
-
-% Reserve space for GUI checking
-data.proc.chk_bad_call = ones((length(data.mic_data.call_idx_w_track)),1);  % if a bad call
-data.proc.ch_ex{length(data.mic_data.call_idx_w_track)} = [];  % channels to be excluded
 
 % Remove raw mic signals and long sections from structure
 data.proc = rmfield(data.proc,'call_align');
 data.proc = rmfield(data.proc,'call_no_align');
 data.mic_data = rmfield(data.mic_data,'sig');
 data = rmfield(data,'match_seq');
-
 
 
 function data = time_delay_btwn_bat_mic(data)
@@ -141,7 +141,9 @@ data.proc.mic_to_bat_dist(iC,:) = mic_to_bat_dist;  % distance from bat to mic [
 data.proc.mic_to_bat_vec(iC,:,:) = mic_to_bat_vec;  % vector direction from bat to mic
 data.proc.mic_to_bat_angle(iC,:,:) = mic2bat_2d;  % angle of each mic from bat's perspective [azimuth, elevation] --> 2d config
 data.proc.mic_to_bat_angle_x(iC,:,:) = mic2bat_x;  % angle of each mic from bat's perspective [azimuth, elevation] --> cross config
-
+data.proc.source_head_aim(iC) = data.track.marker_indicator(curr_call_loc_idx_on_track);  % source of head aim vector
+                                                                                          % 1-from marker
+                                                                                          % 0-from smoothed track
 end
 
 
@@ -165,7 +167,7 @@ end
 
 
 function data = load_mic_info(data)
-A = load(fullfile(data.path.mic_info,data.files.mic_info));
+A = load(fullfile(data.path.base_dir,data.path.mic_info,data.files.mic_info));
 data.mic_loc = A.mic_loc(:,[3 1 2]);  % permute to get the x-y-z coordinate right
 data.mic_vec = A.mic_vec(:,[3 1 2]);
 data.mic_vh = A.mic_vh;
@@ -174,58 +176,122 @@ clear A
 
 
 function data = load_mic_bp_sens(data)
-data.mic_sens = load(fullfile(data.path.mic_sens,data.files.mic_sens));
-data.mic_bp = load(fullfile(data.path.mic_bp,data.files.mic_bp));
+data.mic_sens = load(fullfile(data.path.base_dir,data.path.mic_sens,data.files.mic_sens));
+data.mic_bp = load(fullfile(data.path.base_dir,data.path.mic_bp,data.files.mic_bp));
 
 
-function data = load_bat_pos(data)
-bat = load(fullfile(data.path.bat_pos,data.files.bat_pos));
-cut_idx = 1:800;
+function data = load_bat_pos(data,cut_idx)
+bat = load(fullfile(data.path.base_dir,data.path.bat_pos,data.files.bat_pos));
 
 % Raw tracks
 pos = cell2mat(bat.bat_pos);
 pos = reshape(pos,length(pos),3,[]);
+if isempty(cut_idx)
+    cut_idx = 1:size(pos,1);
+end
 pos = pos(cut_idx,:,:);
-track = mean(pos,3);  % raw bat track: mean of three points
-track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
+track = nanmean(pos,3);  % raw bat track: mean of three points
+% track_all3 = mean(pos,3);  % raw bat track with all 3 points presents
+% track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
 track_t = -fliplr(0:size(track,1)-1)/data.track.fs;  % Time stamp of the track [sec]
 
-% Smooth track
-notnanidx = find(~isnan(track(:,1)));
-idx = notnanidx(1):notnanidx(end);
-track_sm = nan(size(track));
-track_sm(idx,:) = sm_track(track(idx,:),10);
+% Find segments
+sm_len = 10;
+seg_idx = find_seg(track,sm_len);
+% seg_idx_all3 = find_seg(track_all3,sm_len);
+seg_idx_tip = find_seg(pos(:,:,1),sm_len);
+seg_idx_left = find_seg(pos(:,:,2),sm_len);
+seg_idx_right = find_seg(pos(:,:,3),sm_len);
+
+% Smooth track and marker pos
+track_sm = sm_track(track(:,[3 1 2]),sm_len,seg_idx);
+tip = sm_track(pos(:,[3 1 2],1),sm_len,seg_idx_tip);
+left = sm_track(pos(:,[3 1 2],2),sm_len,seg_idx_left);
+right = sm_track(pos(:,[3 1 2],3),sm_len,seg_idx_right);
+
+head_aim = norm_mtx_vec(tip-(left+right)/2);
+head_n = norm_mtx_vec(cross(tip-left,tip-right));
 
 % Interpolate to finer resolution for aligning calls
 track_int_t_interval = 1e-3;  % interpolate to 1ms interval
 track_int_t = track_t(1):track_int_t_interval:track_t(end);
 track_int = int_track(track_t,track_sm,track_int_t);
+head_aim_int = int_track(track_t,head_aim,track_int_t);
+head_n_int = int_track(track_t,head_n,track_int_t);
 
-% Head aim
-head_aim_sm = nan(size(track));
-head_aim_sm(idx,:) = sm_track(bat.head_vec(idx,[3 1 2]),10);
-head_aim_int = int_track(track_t,head_aim_sm,track_int_t);
+% Indicator of where head aim/normal comes from
+marker_indic = zeros(size(track_int,1),1);
+marker_indic(~isnan(head_aim_int(:,1))) = 1;  % 1-head aim derived from interpolated marker locations
+                                         % 0-head aim derived from track
 
-% Head plane normal
-head_n_sm = nan(size(track));
-head_n_sm(idx,:) = sm_track(bat.nn(idx,[3 1 2]),10);
-head_n_int = int_track(track_t,head_n_sm,track_int_t);
+% Fake head aim from smoothed track
+head_aim_fake = [track_sm(sm_len:end,1:2)-track_sm(1:end-sm_len+1,1:2),zeros(size(track_sm,1)-sm_len+1,1)];
+head_aim_fake = norm_mtx_vec(head_aim_fake);                      
+head_aim_fake_int = int_track(track_t(1:end-sm_len+1),head_aim_fake,track_int_t);
+
+% Fake head normal from mics on the floor
+A = data.mic_loc(data.param.mic_floor_idx,:);
+A0 = bsxfun(@minus,A,mean(A,1)); % Subtract "mean" point
+[~,~,V] = svd(A0,0);
+norm_vec = norm_mtx_vec(V(:,3)');
+
+% Fill in gaps for head aim and head normal
+nanidx = isnan(head_aim_int(:,1));
+head_aim_int(nanidx,:) = head_aim_fake_int(nanidx,:);
+head_n_int(nanidx,:) = repmat(norm_vec,sum(nanidx),1);
 
 % Save data
 data.track.marked_pos = pos(:,[3 1 2],:);
+data.track.smooth_len = sm_len;
 data.track.track_raw = track;
 data.track.track_raw_time = track_t;
 data.track.track_smooth = track_sm;
+data.track.tip_smooth = tip;
+data.track.left_smooth = left;
+data.track.right_smooth = right;
 data.track.track_interp = track_int;
 data.track.track_interp_time = track_int_t;
 
-data.head_aim.marked_pos = bat.head_vec(:,[3 1 2]);
-data.head_aim.head_aim_smooth = norm_mtx_vec(head_aim_sm);
-data.head_aim.head_aim_int = norm_mtx_vec(head_aim_int);
+data.track.marker_indicator = marker_indic;
 
-data.head_normal.marked_pos = bat.nn(:,[3 1 2]);
-data.head_normal.head_normal_smooth = norm_mtx_vec(head_n_sm);
-data.head_normal.head_normal_int = norm_mtx_vec(head_n_int);
+data.head_aim.head_aim_smooth = head_aim;
+data.head_aim.head_aim_int = head_aim_int;
+
+data.head_normal.head_normal_smooth = head_n;
+data.head_normal.head_normal_int = head_n_int;
+
+
+
+function seg_idx = find_seg(pos,sm_len)
+notnan = ~isnan(pos(:,1));
+idx_nan = find(diff(notnan)~=0)+1;
+
+g = normpdf(-sm_len:sm_len,0,sm_len);
+w = conv(double(notnan),g,'same');
+idx = find(diff(w~=0)~=0)+1;
+idx_up = find(diff(w~=0)>0)+1;
+idx_dn = find(diff(w~=0)<0)+1;
+
+if ~isempty(idx)
+    [~,iconv] = min(abs(repmat(idx',length(idx_nan),1)-repmat(idx_nan,1,length(idx))),[],1);
+    if isempty(idx_up) && ~isempty(idx_dn)
+        seg_idx = [1;idx_nan(iconv)];
+    elseif ~isempty(idx_up) && isempty(idx_dn)
+        seg_idx = [idx_nan(iconv);size(pos,1)];
+    else
+        if idx_up(1)~=idx(1)  % if the first up edge not at the beginning
+            seg_idx = [1;idx_nan(iconv)];
+        else
+            seg_idx = idx_nan(iconv);
+        end
+    end
+else
+    seg_idx = [1,size(pos,1)];
+end
+if mod(length(seg_idx),2)~=0  % if the last down edge not at the end
+    seg_idx = [seg_idx;length(notnan)];
+end
+seg_idx = reshape(seg_idx,2,[])';
 
 
 function v_int = int_track(x,v,x_int)
@@ -234,11 +300,13 @@ v_int(:,2) = interp1(x,v(:,2),x_int);
 v_int(:,3) = interp1(x,v(:,3),x_int);
 
 
-function v_sm = sm_track(v,sm_len)
-v_sm(:,1) = smooth(v(:,1),sm_len);
-v_sm(:,2) = smooth(v(:,2),sm_len);
-v_sm(:,3) = smooth(v(:,3),sm_len);
-
+function v_sm = sm_track(v,sm_len,seg_idx)
+v_sm = nan(size(v));
+for iS=1:size(seg_idx,1)
+    v_sm(seg_idx(iS,1):seg_idx(iS,2),1) = smooth(v(seg_idx(iS,1):seg_idx(iS,2),1),sm_len);
+    v_sm(seg_idx(iS,1):seg_idx(iS,2),2) = smooth(v(seg_idx(iS,1):seg_idx(iS,2),2),sm_len);
+    v_sm(seg_idx(iS,1):seg_idx(iS,2),3) = smooth(v(seg_idx(iS,1):seg_idx(iS,2),3),sm_len);
+end
 
 function mtx_v_norm = norm_mtx_vec(mtx_v)
 dd = diag(sqrt(mtx_v*mtx_v'));
@@ -246,9 +314,10 @@ mtx_v_norm = mtx_v./repmat(dd,1,3);
 
 
 function data = load_mic_data(data)
-A = load(fullfile(data.path.mic_data,data.files.mic_data),'sig');
-mic_data = load(fullfile(data.path.mic_detect,data.files.mic_detect));
+A = load(fullfile(data.path.base_dir,data.path.mic_data,data.files.mic_data));
+mic_data = load(fullfile(data.path.base_dir,data.path.mic_detect,data.files.mic_detect));
 mic_data.sig = A.sig;
+mic_data.fs = A.fs;
 clear A
 mic_data.sig_t = -fliplr(0:size(mic_data.sig,1)-1)/mic_data.fs;  % time stamps for mic signals [sec]
 data.mic_data = mic_data;
@@ -257,19 +326,13 @@ data = get_call_on_seg_stuff(data);  % Get call idx info on selected track segme
 
 function data = get_call_on_seg_stuff(data)
 % Get call and idx info
-notnanidx = find(~isnan(data.track.track_interp(:,1)));
-track_notnan_time = data.track.track_interp_time([notnanidx(1) notnanidx(end)]);
-mic_idx_w_track(1) = find((data.mic_data.sig_t-track_notnan_time(1))>0,1,'first');   % start and end idx of the track segment in mic_data
-mic_idx_w_track(2) = find((data.mic_data.sig_t-track_notnan_time(2))>0,1,'first')-1;
-call_idx_w_track = find([data.mic_data.call.locs]>mic_idx_w_track(1) &...  % index of call within the selected track segment
-                         [data.mic_data.call.locs]<mic_idx_w_track(2));
-call_time = data.mic_data.sig_t([data.mic_data.call(call_idx_w_track).locs]);
-
-% call emission location in terms of idx of interpolated track
-[~,call_loc_on_track_idx] = min(abs( repmat(call_time,length(data.track.track_interp_time),1)-...  
-                            repmat(data.track.track_interp_time',1,length(call_time))),[],1);
+call_time = data.mic_data.sig_t([data.mic_data.call.locs]);
+[~,track_interp_time_idx] = min(abs(repmat(call_time,length(data.track.track_interp_time),1)-...
+                                    repmat(data.track.track_interp_time',1,length(call_time))),[],1);
+notnan_track_idx = find(~isnan(data.head_aim.head_aim_int(track_interp_time_idx,1)));
+call_loc_idx_on_track_interp = track_interp_time_idx(notnan_track_idx);
 
 % Save data
-data.mic_data.call_idx_w_track = call_idx_w_track;  % idx of calls in mic_data.call within the selected track
-data.track.call_loc_idx_on_track_interp = call_loc_on_track_idx;  % call emission location in terms of idx of interpolated track
+data.mic_data.call_idx_w_track = notnan_track_idx;  % idx of calls in mic_data.call within the selected track
+data.track.call_loc_idx_on_track_interp = call_loc_idx_on_track_interp;  % call emission location in terms of idx of interpolated track
 

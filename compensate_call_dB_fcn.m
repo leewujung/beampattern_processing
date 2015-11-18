@@ -10,8 +10,9 @@ for iC = 1:proc_call_num
 
 mic_to_bat_dist = data.proc.mic_to_bat_dist(iC,:);     % distance between bat and mic
 bat_to_mic_angle = data.proc.bat_to_mic_angle(iC,:);   % angle to compensate for mic beampattern
-call_psd_raw_dB = data.proc.call_psd_raw_dB{iC};  % call spectrum in dB scale
-call_freq = data.proc.call_freq_vec{iC};  % frequency vector of the call spectrum
+% call_psd_raw_dB = data.proc.call_psd_raw_dB{iC};  % call spectrum in dB scale
+call_psd_raw_dB = cell2mat(data.proc.call_psd_raw_dB(iC,:)')';  % call spectrum in dB scale
+call_freq = cell2mat(data.proc.call_freq_vec(iC,1));  % frequency vector of the call spectrum
 d0 = 0.1;  % [m] reference distance from bat
 
 % Transmission loss: air absorption and spreading loss
@@ -43,25 +44,27 @@ call_psd_dB_comp_re20uPa_nobp = call_psd_dB_comp_nobp + 20*log10(1/20e-6) - gain
 call_psd_dB_comp_re20uPa_withbp = call_psd_dB_comp_withbp + 20*log10(1/20e-6) - gain_dB_fac;
 
 % Call SPL using p2p voltage
-[call_max_p2p,max_p2p_ch_idx] = max(max(data.proc.call_align_short{iC},[],1));
+[call_max_p2p,max_p2p_ch_idx] = max(max(cell2mat(data.proc.call_align_short(iC,:)'),[],2));
 TL_dB_mean = mean(TL_dB(:,max_p2p_ch_idx));
 mic_sens_dB_mean = mean(mic_sens_dB(:,max_p2p_ch_idx));
 call_p2p_max_ch_dB = 20*log10(call_max_p2p);
 call_p2p_SPL_comp_re20uPa = call_p2p_max_ch_dB + TL_dB_mean - mic_sens_dB_mean +...
-                                   20*log10(1/20e-6) - 20*log10(data.mic_gain(max_p2p_ch_idx));
+                                   20*log10(1/20e-6) - data.mic_gain(max_p2p_ch_idx);
 
 % Save data
-data.param.alpha = alpha;
-data.param.alpha_iso = alpha_iso;
-data.proc.air_attn_dB{iC} = air_attn_dB;
-data.proc.spreading_loss_dB{iC} = spreading_loss_dB;
-data.proc.TL_dB{iC} = TL_dB;
-data.proc.mic_bp_compensation_dB{iC} = bp_compensation;
-data.proc.mic_sens_dB{iC} = mic_sens_dB;
-data.proc.call_psd_dB_comp_nobp{iC} = call_psd_dB_comp_nobp;
-data.proc.call_psd_dB_comp_withbp{iC} = call_psd_dB_comp_withbp;
-data.proc.call_psd_dB_comp_re20uPa_nobp{iC} = call_psd_dB_comp_re20uPa_nobp;
-data.proc.call_psd_dB_comp_re20uPa_withbp{iC} = call_psd_dB_comp_re20uPa_withbp;
-data.proc.call_p2p_SPL_comp_re20uPa{iC} = call_p2p_SPL_comp_re20uPa;
+call_len = size(call_psd_raw_dB,2);
+data.param.d0 = d0;
+data.param.alpha(iC,:) = num2cell(repmat(alpha',1,call_len)',2);
+data.param.alpha_iso(iC,:) = num2cell(repmat(alpha_iso',1,call_len)',2);
+data.proc.air_attn_dB(iC,:) = num2cell(air_attn_dB,2);
+data.proc.spreading_loss_dB(iC,:) = num2cell(spreading_loss_dB,2);
+data.proc.TL_dB(iC,:) = num2cell(TL_dB',2);
+data.proc.mic_bp_compensation_dB(iC,:) = num2cell(bp_compensation',2);
+data.proc.mic_sens_dB(iC,:) = num2cell(mic_sens_dB',2);
+data.proc.call_psd_dB_comp_nobp(iC,:) = num2cell(call_psd_dB_comp_nobp',2);
+data.proc.call_psd_dB_comp_withbp(iC,:) = num2cell(call_psd_dB_comp_withbp',2);
+data.proc.call_psd_dB_comp_re20uPa_nobp(iC,:) = num2cell(call_psd_dB_comp_re20uPa_nobp',2);
+data.proc.call_psd_dB_comp_re20uPa_withbp(iC,:) = num2cell(call_psd_dB_comp_re20uPa_withbp',2);
+data.proc.call_p2p_SPL_comp_re20uPa(iC) = call_p2p_SPL_comp_re20uPa;
 
 end

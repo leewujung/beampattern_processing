@@ -5,9 +5,13 @@ function plot_bp_2d(handles)
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
 mic_to_bat_angle = squeeze(data.proc.mic_to_bat_angle(gui_op.current_call_idx,:,:));
-freq_wanted = str2num(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
-[~,fidx] = min(abs(freq_wanted-data.proc.call_freq_vec{gui_op.current_call_idx}));
-call_dB = squeeze(data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx}(fidx,:));
+freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+call_dB = nan(1,data.mic_data.num_ch_in_file);
+for iM=1:data.mic_data.num_ch_in_file
+    freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
+    [~,fidx] = min(abs(freq-freq_wanted));
+    call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+end
 
 % Check for channels to be excluded
 if isempty(data.proc.ch_ex{gui_op.current_call_idx})
@@ -39,16 +43,20 @@ vq_norm = vq-maxref;
 % Update peak call amplitude
 set(handles.edit_peak_db,'String',sprintf('%2.1f',maxref));
 
+% Find indices within measured polygon
+k = boundary(az,el,0);  % outer boundary of all measured points
+in = inpolygon(azq,elq,az(k),el(k));
+
 % Plot interpolated beampattern ==========================
 axes(handles.axes_bp);
 if get(handles.checkbox_norm,'Value')==0  % if "normalized" not checked
     himg = imagesc(azq(1,:)/pi*180,elq(:,1)/pi*180,vq);
-    set(himg,'AlphaData',~isnan(vq));  % make NaN part transparent
+    set(himg,'AlphaData',in);  % make NaN part transparent
     hold on
     caxis([gui_op.caxis_raw_current(1) gui_op.caxis_raw_current(2)]);
 else
     himg = imagesc(azq(1,:)/pi*180,elq(:,1)/pi*180,vq_norm);
-    set(himg,'AlphaData',~isnan(vq));  % make NaN part transparent
+    set(himg,'AlphaData',in);  % make NaN part transparent
     hold on
     caxis([gui_op.caxis_norm_current(1) gui_op.caxis_norm_current(2)]);
 end
@@ -75,6 +83,7 @@ cvec_min_idx = find(contour_vec-vq_norm_min<0,1,'first');
 
 % Plot contour beampattern
 axes(handles.axes_bp_contour);
+vq_norm(~in) = NaN;
 contourf(azq/pi*180,elq/pi*180,vq_norm,contour_vec(1:cvec_min_idx),'w');
 hold on
 plot(az/pi*180,el/pi*180,'wx');

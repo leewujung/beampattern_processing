@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 05-Nov-2015 16:00:14
+% Last Modified by GUIDE v2.5 17-Nov-2015 21:56:31
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -84,6 +84,9 @@ set(hObject,'toolbar','figure');
 % Update handles structure
 guidata(hObject, handles);
 
+% Set main GUI handle to appdata
+setappdata(0,'bp_check_gui_handles',handles);
+
 % UIWAIT makes bp_check_gui wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
@@ -126,7 +129,7 @@ gui_op.base_dir = fileparts(fileparts(pname));  % base_dir is one level up from 
 if ~exist(gui_op.base_dir,'dir')  % if base_dir doesn't exist
     gui_op.base_dir = pwd;
 end
-% cd(gui_op.base_dir)
+cd(gui_op.base_dir)
 
 gui_op.current_call_idx = 1;
 data.path.proc_data = pname;
@@ -159,9 +162,13 @@ gui_op.linlog = handles.loglin_radio_grp.SelectedObject.Tag;  % linear/log selec
 gui_op.interp = handles.interp_radio_grp.SelectedObject.Tag;  % interpolation selection
 
 % Get default caxis info
-freq_wanted = str2num(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
-[~,fidx] = min(abs(freq_wanted-data.proc.call_freq_vec{gui_op.current_call_idx}));
-call_dB = squeeze(data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx}(fidx,:));
+freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+call_dB = nan(data.mic_data.num_ch_in_file,1);
+for iM=1:data.mic_data.num_ch_in_file
+    freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
+    [~,fidx] = min(abs(freq-freq_wanted));
+    call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+end
 gui_op.caxis_raw_default = [floor(min(min(call_dB))/5)*5, ceil(max(max(call_dB))/5)*5];
 gui_op.caxis_norm_default = [floor(-range(call_dB)/5)*5, 0];
 gui_op.caxis_raw_current = gui_op.caxis_raw_default;
@@ -177,9 +184,11 @@ view_track_gui;
 % Update figure and display info for call#1
 set(handles.text_current_call1,'String',num2str(gui_op.current_call_idx));
 set(handles.text_current_call2,'String',['/',num2str(length(data.mic_data.call_idx_w_track))]);
-update_bad_call(handles);  % udpate bad call checkbox
+update_good_call(handles);  % udpate good call checkbox
+update_head_aim_mkr(handles);  % update head aim source
 update_ch_ex(handles);     % update list of channel to be excluded
 update_caxis(handles);     % update color axis for bp display
+update_edit_call_gui;  % update edit_call_section GUI if exist
 
 plot_bat_mic_vector;   % plot bat2mic vector
 plot_time_series_in_gui(handles);  % display time series of first call
@@ -216,11 +225,13 @@ setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 
 % Update info
-update_bad_call(handles);
+update_good_call(handles);
+update_head_aim_mkr(handles);  % update head aim source
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
-move_call_circle_on_track();  % update current call location on track
+move_call_circle_on_track;  % update current call location on track
+update_edit_call_gui;  % update edit_call_section GUI if exist
 
 % Update plot
 plot_bat_mic_vector;   % plot bat2mic vector
@@ -230,7 +241,6 @@ if strcmp(gui_op.mic_config,'rb_cross');
 else
     plot_bp_2d(handles);  % display beampattern
 end
-
 
 
 % --- Executes on button press in button_next_call.
@@ -247,11 +257,13 @@ setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 
 % Update info
-update_bad_call(handles);
+update_good_call(handles);
+update_head_aim_mkr(handles);  % update head aim source
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
 move_call_circle_on_track();  % update current call location on track
+update_edit_call_gui;  % update edit_call_section GUI if exist
 
 % Update plot
 plot_bat_mic_vector;   % plot bat2mic vector
@@ -260,6 +272,12 @@ if strcmp(gui_op.mic_config,'rb_cross');
     plot_bp_cross(handles);  % display beampattern
 else
     plot_bp_2d(handles);  % display beampattern
+end
+
+
+function update_edit_call_gui()
+if isappdata(0,'edit_call_gui_handles')
+    edit_call_section;
 end
 
 
@@ -277,7 +295,8 @@ setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 
 % Update info
-update_bad_call(handles);
+update_good_call(handles);
+update_head_aim_mkr(handles);  % update head aim source
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
@@ -365,6 +384,10 @@ hh2 = getappdata(0,'track_gui_handles');
 if isfield(hh2,'figure1')
     delete(hh2.figure1);
 end
+hh3 = getappdata(0,'edit_call_gui_handles');
+if isfield(hh3,'figure1')
+    delete(hh3.figure1);
+end
 
 % delete appdata
 if isappdata(0,'data')
@@ -373,8 +396,17 @@ end
 if isappdata(0,'gui_op')
     rmappdata(0,'gui_op');
 end
+if isappdata(0,'gui_call_op')
+    rmappdata(0,'gui_call_op');
+end
 if isappdata(0,'track_gui_handles')
     rmappdata(0,'track_gui_handles');
+end
+if isappdata(0,'edit_call_gui_handles')
+    rmappdata(0,'edit_call_gui_handles');
+end
+if isappdata(0,'bp_check_gui_handles')
+    rmappdata(0,'bp_check_gui_handles');
 end
 
 % Hint: delete(hObject) closes the figure
@@ -428,28 +460,25 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in checkbox_bad_call.
-function checkbox_bad_call_Callback(hObject, eventdata, handles)
-% hObject    handle to checkbox_bad_call (see GCBO)
+% --- Executes on button press in checkbox_good_call.
+function checkbox_good_call_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_good_call (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
-data.proc.chk_bad_call(gui_op.current_call_idx) = get(hObject,'Value');
+data.proc.chk_good_call(gui_op.current_call_idx) = get(hObject,'Value');
 setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 
 
-function update_bad_call(handles)
+function update_good_call(handles)
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
-% if ~isfield(data.proc,'chk_bad_call') || length(data.proc.chk_bad_call)<gui_op.current_call_idx
-%     data.proc.chk_bad_call(gui_op.current_call_idx) = 0;
-% end
-if data.proc.chk_bad_call(gui_op.current_call_idx)==1
-    set(handles.checkbox_bad_call,'Value',1);
+if data.proc.chk_good_call(gui_op.current_call_idx)==1
+    set(handles.checkbox_good_call,'Value',1);
 else
-    set(handles.checkbox_bad_call,'Value',0);
+    set(handles.checkbox_good_call,'Value',0);
 end
 
 
@@ -666,4 +695,49 @@ function edit_peak_db_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on key press with focus on figure1 and none of its controls.
+function figure1_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.FIGURE)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+switch eventdata.Key
+    case {'numpad4','leftarrow'}
+        button_previous_call_Callback(handles.button_previous_call, eventdata, handles);
+    case {'numpad6','rightarrow'}
+        button_next_call_Callback(handles.button_next_call, eventdata, handles);
+end
+
+
+
+% --- Executes on button press in button_edit_call_sec.
+function button_edit_call_sec_Callback(hObject, eventdata, handles)
+% hObject    handle to button_edit_call_sec (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+edit_call_section;
+
+
+
+% --- Executes on button press in checkbox_head_aim_mkr.
+function checkbox_head_aim_mkr_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_head_aim_mkr (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_head_aim_mkr
+
+
+function update_head_aim_mkr(handles)
+data = getappdata(0,'data');
+gui_op = getappdata(0,'gui_op');
+if data.proc.source_head_aim(gui_op.current_call_idx)==1
+    set(handles.checkbox_head_aim_mkr,'Value',1);
+else
+    set(handles.checkbox_head_aim_mkr,'Value',0);
 end
