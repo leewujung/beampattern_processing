@@ -141,7 +141,9 @@ data.proc.mic_to_bat_dist(iC,:) = mic_to_bat_dist;  % distance from bat to mic [
 data.proc.mic_to_bat_vec(iC,:,:) = mic_to_bat_vec;  % vector direction from bat to mic
 data.proc.mic_to_bat_angle(iC,:,:) = mic2bat_2d;  % angle of each mic from bat's perspective [azimuth, elevation] --> 2d config
 data.proc.mic_to_bat_angle_x(iC,:,:) = mic2bat_x;  % angle of each mic from bat's perspective [azimuth, elevation] --> cross config
-
+data.proc.source_head_aim(iC) = data.track.marker_indicator(curr_call_loc_idx_on_track);  % source of head aim vector
+                                                                                          % 1-from marker
+                                                                                          % 0-from smoothed track
 end
 
 
@@ -219,7 +221,7 @@ head_n_int = int_track(track_t,head_n,track_int_t);
 
 % Indicator of where head aim/normal comes from
 marker_indic = zeros(size(track_int,1),1);
-marker_indic(~isnan(head_aim_int)) = 1;  % 1-head aim derived from interpolated marker locations
+marker_indic(~isnan(head_aim_int(:,1))) = 1;  % 1-head aim derived from interpolated marker locations
                                          % 0-head aim derived from track
 
 % Fake head aim from smoothed track

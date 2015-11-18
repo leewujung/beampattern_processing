@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 16-Nov-2015 20:38:22
+% Last Modified by GUIDE v2.5 17-Nov-2015 21:56:31
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -185,6 +185,7 @@ view_track_gui;
 set(handles.text_current_call1,'String',num2str(gui_op.current_call_idx));
 set(handles.text_current_call2,'String',['/',num2str(length(data.mic_data.call_idx_w_track))]);
 update_good_call(handles);  % udpate good call checkbox
+update_head_aim_mkr(handles);  % update head aim source
 update_ch_ex(handles);     % update list of channel to be excluded
 update_caxis(handles);     % update color axis for bp display
 update_edit_call_gui;  % update edit_call_section GUI if exist
@@ -225,6 +226,7 @@ setappdata(0,'gui_op',gui_op);
 
 % Update info
 update_good_call(handles);
+update_head_aim_mkr(handles);  % update head aim source
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
@@ -256,6 +258,7 @@ setappdata(0,'gui_op',gui_op);
 
 % Update info
 update_good_call(handles);
+update_head_aim_mkr(handles);  % update head aim source
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
@@ -293,6 +296,7 @@ setappdata(0,'gui_op',gui_op);
 
 % Update info
 update_good_call(handles);
+update_head_aim_mkr(handles);  % update head aim source
 update_ch_ex(handles);
 update_call_num(handles);  % updated displayed call number
 update_caxis(handles);     % update color axis for bp display
@@ -718,3 +722,22 @@ function button_edit_call_sec_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 edit_call_section;
 
+
+
+% --- Executes on button press in checkbox_head_aim_mkr.
+function checkbox_head_aim_mkr_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_head_aim_mkr (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_head_aim_mkr
+
+
+function update_head_aim_mkr(handles)
+data = getappdata(0,'data');
+gui_op = getappdata(0,'gui_op');
+if data.proc.source_head_aim(gui_op.current_call_idx)==1
+    set(handles.checkbox_head_aim_mkr,'Value',1);
+else
+    set(handles.checkbox_head_aim_mkr,'Value',0);
+end
