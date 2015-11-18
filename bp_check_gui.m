@@ -137,10 +137,11 @@ disp('Processed results loaded');
 
 % Load mic data
 disp('Loading raw mic signals...')
-if ~isfield(gui_op,'path_mic_data')  % check for GUI operation
+% check for GUI operation
+if ~isfield(gui_op,'path_mic_data') || ( exist(data.path.mic_data,'dir') &&...
+      exist(fullfile(gui_op.base_dir,gui_op.path_mic_data,[data.files.mic_data,'.mat']),'file') )
     gui_op.path_mic_data = data.path.mic_data;
-end
-if ~exist(fullfile(gui_op.base_dir,gui_op.path_mic_data,[data.files.mic_data,'.mat']),'file')  % check if mic_data.mat exist in folder saved in file
+else
     if ispref('bp_check_gui','mic_data_path')
       MDpath=getpref('bp_check_gui','mic_data_path');
     else
