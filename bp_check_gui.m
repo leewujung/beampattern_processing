@@ -112,13 +112,13 @@ gui_op = getappdata(0,'gui_op');
 
 % Load processed file
 if ispref('bp_check_gui') && ispref('bp_check_gui','proc_file_path')
-  pname=getpref('bp_check_gui','proc_file_path');
+    pname = getpref('bp_check_gui','proc_file_path');
 else
-  pname='';
+    pname = '';
 end
 [fname,pname] = uigetfile('*.mat','Pick processed file',pname);
 if isequal(pname,0)
-  return
+    return
 end
 setpref('bp_check_gui','proc_file_path',pname)
 disp(['Loading processed file: ',fname]);
@@ -129,7 +129,7 @@ gui_op.base_dir = fileparts(fileparts(pname));  % base_dir is one level up from 
 if ~exist(gui_op.base_dir,'dir')  % if base_dir doesn't exist
     gui_op.base_dir = pwd;
 end
-cd(gui_op.base_dir)
+% cd(gui_op.base_dir)
 
 gui_op.current_call_idx = 1;
 data.path.proc_data = pname;
@@ -138,23 +138,27 @@ disp('Processed results loaded');
 
 % Load mic data
 disp('Loading raw mic signals...')
-if ~isfield(gui_op,'path_mic_data')  % check for GUI operation
-    gui_op.path_mic_data = data.path.mic_data;
+if ~ispref('bp_check_gui','mic_data_path')
+    md_path = fullfile(gui_op.base_dir,data.path.mic_data);
+else
+    md_path = getpref('bp_check_gui','mic_data_path');
 end
-if ~exist(fullfile(gui_op.base_dir,gui_op.path_mic_data,[data.files.mic_data,'.mat']),'file')  % check if mic_data.mat exist in folder saved in file
-    if ispref('bp_check_gui','mic_data_path')
-      MDpath=getpref('bp_check_gui','mic_data_path');
-    else
-      MDpath=data.path.mic_data;
+if ~exist(fullfile(md_path,[data.files.mic_data,'.mat']),'file')  % if cannot find mic_data in path then select new one
+    md_path = uigetdir(md_path,'Select the directory with mic_data files');
+    if isequal(md_path,0)
+        return;
     end
-    gui_op.path_mic_data = uigetdir(MDpath,'Select the directory with mic_data files');
-    if isequal(gui_op.path_mic_data,0)
-      return;
+    if ~exist(fullfile(md_path,[data.files.mic_data,'.mat']),'file')
+        disp('Specified mic data file not found in the path, try again');
+        fprintf('File wanted: %s',[data.files.mic_data,'.mat']);
+        return;
     end
-    setpref('bp_check_gui','mic_data_path',gui_op.path_mic_data);
 end
+setpref('bp_check_gui','mic_data_path',md_path);
+gui_op.path_mic_data = md_path;
 A = load(fullfile(gui_op.path_mic_data,data.files.mic_data));
 data.mic_data.sig = A.sig;  % save mic signals into the current data structure
+
 
 % Get current mic config display setting
 gui_op.mic_config = handles.config_radio_grp.SelectedObject.Tag;  % configuration selection
