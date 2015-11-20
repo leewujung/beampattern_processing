@@ -346,12 +346,7 @@ function button_ch_next_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 gui_call_op = getappdata(0,'gui_call_op');
 gui_op = getappdata(0,'gui_op');
-tmp = mod(gui_call_op.curr_ch+1,gui_call_op.num_ch_in_file);
-if tmp==0
-    gui_call_op.curr_ch = gui_call_op.num_ch_in_file;
-else
-    gui_call_op.curr_ch = tmp;
-end
+gui_call_op.curr_ch = min(gui_call_op.curr_ch+1,gui_call_op.num_ch_in_file);
 set(handles.edit_ch,'String',num2str(gui_call_op.curr_ch));
 
 setappdata(0,'gui_call_op',gui_call_op);
@@ -366,12 +361,7 @@ function butto_ch_previous_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 gui_call_op = getappdata(0,'gui_call_op');
 gui_op = getappdata(0,'gui_op');
-tmp = mod(gui_call_op.curr_ch-1,gui_call_op.num_ch_in_file);
-if tmp==0
-    gui_call_op.curr_ch = gui_call_op.num_ch_in_file;
-else
-    gui_call_op.curr_ch = tmp;
-end
+gui_call_op.curr_ch = max(gui_call_op.curr_ch-1,1);
 set(handles.edit_ch,'String',num2str(gui_call_op.curr_ch));
 
 setappdata(0,'gui_call_op',gui_call_op);
