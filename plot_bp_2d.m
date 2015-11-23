@@ -60,10 +60,6 @@ elqm(isnan(vq_norm)) = NaN;
 azqm = azq;
 azqm(isnan(vq_norm)) = NaN;
 
-vq_norm_min = min(min(vq_norm));
-contour_vec = 0:-3:floor(vq_norm_min/3)*3;
-cvec_min_idx = find(contour_vec-vq_norm_min<0,1,'first');
-
 axes(handles.axes_bp);
 cla
 axesm eckert4;
@@ -77,13 +73,15 @@ else
     geoshow(elqm/pi*180,azqm/pi*180,vq_norm,'displaytype','texturemap');
     cc = [gui_op.caxis_norm_current(1) gui_op.caxis_norm_current(2)];
 end
-contourm(elq/pi*180,azq/pi*180,vq_norm,[0 -3],'w','linewidth',2);
+contourm(elq/pi*180,azq/pi*180,vq_norm,-3,'w','linewidth',2);
 textm(el/pi*180,az/pi*180,num2str(mic_num(angle_notnanidx)'),'horizontalalignment','center');
 caxis(cc);
 colorbar('southoutside');
 tightmap
-%     caxis([gui_op.caxis_raw_current(1) gui_op.caxis_raw_current(2)]);
-%     caxis([gui_op.caxis_norm_current(1) gui_op.caxis_norm_current(2)]);
+
+vq_norm_min = min(vq_norm(:));
+contour_vec = 0:-3:(floor(vq_norm_min/3)-1)*3;
+cvec_min_idx = find(contour_vec-vq_norm_min<0,1,'first');
 
 axes(handles.axes_bp_contour);
 cla
@@ -94,10 +92,9 @@ axis off
 contourfm(elq/pi*180,azq/pi*180,vq_norm,contour_vec(1:cvec_min_idx),'w');
 hold on
 textm(el/pi*180,az/pi*180,num2str(mic_num(angle_notnanidx)'),'horizontalalignment','center','fontsize',10);
-% plotm(el/pi*180,az/pi*180,'k+');
-% plotm(el/pi*180,az/pi*180,'ro');
-colormap(handles.axes_bp_contour,parula(cvec_min_idx-1));
 colorbar('southoutside','ticks',fliplr(contour_vec(1:cvec_min_idx)));
+colormap(handles.axes_bp_contour,parula(cvec_min_idx-1));
+caxis(handles.axes_bp_contour,[contour_vec(cvec_min_idx) 0]);
 tightmap
 
 % % Plot interpolated beampattern ==========================
