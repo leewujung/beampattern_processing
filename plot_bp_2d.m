@@ -43,9 +43,6 @@ vq_norm = vq-maxref;
 % Find indices within measured polygon
 k = boundary(az,el,0);  % outer boundary of all measured points
 [in,on] = inpolygon(azq,elq,az(k),el(k));
-% bnd_idx = boundary(az,el,0);  % outer boundary of all measured points
-% bnd = [az(bnd_idx),el(bnd_idx)];
-% [in,on] = inpolygon(azq(:),elq(:),bnd(:,1),bnd(:,2));
 in_smpl_poly = in|on;
 clear in on
 vq(~in_smpl_poly) = NaN;

@@ -426,8 +426,11 @@ function button_save_Callback(hObject, eventdata, handles)
 data = getappdata(0,'data');
 [save_fname,save_pname] = uiputfile('*.mat','Save detection results',...
   fullfile(data.path.proc_data,data.files.proc_data));
+if isfield(data.mic_data,'sig')
+    data.mic_data.sig = [];
+end    
 if isequal(save_fname,0)
-  return
+    return
 end
 save(fullfile(save_pname,save_fname),'-struct','data');
 
