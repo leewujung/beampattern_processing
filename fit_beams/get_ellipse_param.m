@@ -2,13 +2,17 @@ function E = get_ellipse_param(coef)
 
 % Equation coef
 a = coef(1);
-b = coef(2);
+b = coef(2)/2;
 c = coef(3);
-d = coef(4);
-f = coef(5);
+d = coef(4)/2;
+f = coef(5)/2;
 g = coef(6);
 E.coef = coef;
-E.eqt = sprintf('%2.5f*x^2 + %2.5f*x*y + %2.5f*y^2 + %2.5f*x+ %2.5f*y + %2.5f',a,b,c,d,f,g);
+E.eqt = sprintf('%2.5f*x^2 + %2.5f*x*y + %2.5f*y^2 + %2.5f*x+ %2.5f*y + %2.5f',a,2*b,c,2*d,2*f,g);
+
+% Ellipse center
+E.x0 = (c*d-b*f)/(b^2-a*c);
+E.y0 = (a*f-b*d)/(b^2-a*c);
 
 % Semi-axes
 E.a0 = sqrt((2*(a*f^2+c*d^2+g*b^2-2*b*d*f-a*c*g))/((b^2-a*c)*(sqrt((a-c)^2+4*b^2)-(a+c))));
