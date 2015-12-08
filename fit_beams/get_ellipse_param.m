@@ -7,7 +7,12 @@ c = coef(3);
 d = coef(4)/2;
 f = coef(5)/2;
 g = coef(6);
-E.coef = coef;
+E.coef.a = a;
+E.coef.b = b;
+E.coef.c = c;
+E.coef.d = d;
+E.coef.f = f;
+E.coef.g = g;
 E.eqt = sprintf('%2.5f*x^2 + %2.5f*x*y + %2.5f*y^2 + %2.5f*x+ %2.5f*y + %2.5f',a,2*b,c,2*d,2*f,g);
 
 % Ellipse center
@@ -30,11 +35,12 @@ if b==0
         E.theta = pi/2;
     end
 else
-    if a<c
-        E.theta = 1/2*acot((a-c)/(2*b));
-    else
-        E.theta = pi/2+1/2*acot((a-c)/(2*b));
-    end
+    E.theta = 1/2*acot((a-c)/(2*b));
+%     if a<c
+%         E.theta = 1/2*acot((a-c)/(2*b));
+%     else
+%         E.theta = pi/2+1/2*acot((a-c)/(2*b));
+%     end
 end
 
 % Eccentricity (0<=e<1, e=0: circle)
