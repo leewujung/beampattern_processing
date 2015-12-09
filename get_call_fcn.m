@@ -38,12 +38,22 @@ for iC = 1:proc_call_num
     tukeywin_prop = data.param.tukeywin_proportion;  % tukey window taper porportion
     num_ch = data.mic_data.num_ch_in_file;  % number of channels in file
     call_long = squeeze(data.proc.call_align(iC,:,:));
+    curr_call_global_idx = data.mic_data.call_idx_w_track(iC);  % idx of current call among all detected calls
+
     if dura_flag==1
-        sidx_in_long = call_sidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call start idx in extracted portion
-        eidx_in_long = call_eidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call end idx in extracted portion
-        mark_ch = data.mic_data.call_idx_w_track(iC);  % channel selected when call was marked
-        call_template = call_long(sidx_in_long:eidx_in_long,mark_ch);  % curved out template for call
-        call_template_len_pt = length(call_template);
+        iC
+        ch_sel = data.mic_data.call(curr_call_global_idx).channel_marked;
+%         if ~isnan(call_sidx)  % if call start/end have been marked
+            call_sidx = data.mic_data.call(curr_call_global_idx).call_start_idx;
+            call_eidx = data.mic_data.call(curr_call_global_idx).call_end_idx;
+            sidx_in_long = call_sidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call start idx in extracted portion
+            eidx_in_long = call_eidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call end idx in extracted portion
+            call_template = call_long(sidx_in_long:eidx_in_long,ch_sel);  % curved out template for call
+            call_template_len_pt = length(call_template);
+%         else
+%             data.mic_data.call_idx_w_track(iC) = [];  % delete this call if call start/end haven't been marked
+%             continue;
+%         end
     else
         call_len = data.param.call_short_len;
         call_portion_front = data.param.call_portion_front;
@@ -99,6 +109,35 @@ for iC = 1:proc_call_num
                 want_idx = want_idx(1):want_idx(2);
                 call_short(:,iM) = [call_long(want_idx,iM);zeros(call_template_len_pt-length(want_idx),1)];
             end
+        end
+        
+        if plot_opt
+            % find shift_gap between channels
+            shift_gap = max(max(call_long));  % vertical shift gaps for display all channels together
+%             shift_gap = max(max(ch_xcorr_env));  % vertical shift gaps for display all channels together
+            shift_gap = max([floor(shift_gap/0.1)*0.1 0.1]);
+            shift_gap = shift_gap;
+            tstamp = (0:size(call_long,1)-1)/data.mic_data.fs*1e3;
+            
+            % plot
+            figure(fig_chk);
+            cla
+            plot(tstamp,call_long+repmat((1:num_ch)*shift_gap,length(call_long),1),'color',corder(1,:));
+            hold on
+            notnanidx = ~isnan(call_short_se_idx);
+            for iM=1:num_ch
+                if ~isnan(call_short_se_idx(iM,1));
+                    want_idx = call_short_se_idx(iM,1):call_short_se_idx(iM,2);
+                    plot(tstamp(want_idx),call_long(want_idx,iM)+shift_gap*iM,'color',corder(2,:));
+                end
+            end
+            title(sprintf('Call#%d:%d on track',iC,data.mic_data.call_idx_w_track(iC)));
+            ylim([0,shift_gap*(num_ch+2)]);
+            set(gca,'ytick',(1:num_ch)*shift_gap,'yticklabel',1:num_ch);
+            xlabel('Time (ms)');
+            ylabel('Channel number');
+            pause(0.5)
+            hold off
         end
         
     else  % Use default detection stuff ================================

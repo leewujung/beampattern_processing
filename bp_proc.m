@@ -327,12 +327,21 @@ data = get_call_on_seg_stuff(data);  % Get call idx info on selected track segme
 function data = get_call_on_seg_stuff(data)
 % Get call and idx info
 call_time = data.mic_data.sig_t([data.mic_data.call.locs]);
+nan_se_call_idx = isnan([data.mic_data.call.call_start_idx])|...  % Delete calls if start/end haven't been marked
+                  isnan([data.mic_data.call.call_end_idx]);
 [~,track_interp_time_idx] = min(abs(repmat(call_time,length(data.track.track_interp_time),1)-...
                                     repmat(data.track.track_interp_time',1,length(call_time))),[],1);
-notnan_track_idx = find(~isnan(data.head_aim.head_aim_int(track_interp_time_idx,1)));
-call_loc_idx_on_track_interp = track_interp_time_idx(notnan_track_idx);
+notnan_track_idx = isnan(data.head_aim.head_aim_int(track_interp_time_idx,1));   % Delete calls without track info
+bad_call_idx = find(~(nan_se_call_idx(:)|notnan_track_idx(:)));
+call_loc_idx_on_track_interp = track_interp_time_idx(bad_call_idx);
+
+% call_time(nan_se_call_idx) = [];
+% [~,track_interp_time_idx] = min(abs(repmat(call_time,length(data.track.track_interp_time),1)-...
+%                                     repmat(data.track.track_interp_time',1,length(call_time))),[],1);
+% notnan_track_idx = find(~isnan(data.head_aim.head_aim_int(track_interp_time_idx,1)));
+% call_loc_idx_on_track_interp = track_interp_time_idx(notnan_track_idx);
 
 % Save data
-data.mic_data.call_idx_w_track = notnan_track_idx;  % idx of calls in mic_data.call within the selected track
+data.mic_data.call_idx_w_track = bad_call_idx;  % idx of calls in mic_data.call within the selected track
 data.track.call_loc_idx_on_track_interp = call_loc_idx_on_track_interp;  % call emission location in terms of idx of interpolated track
 
