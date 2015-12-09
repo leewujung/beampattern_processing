@@ -414,7 +414,9 @@ gui_call_op.sline_time = plot([1 1]*gui_call_op.se_idx(gui_call_op.curr_ch,1)/gu
 gui_call_op.eline_time = plot([1 1]*gui_call_op.se_idx(gui_call_op.curr_ch,2)/gui_call_op.fs*1e3,[-5 5],'r','linewidth',2);
 hold off
 xlim(xlim_curr);
-ylim(yybnd);
+if ~find(isnan(yybnd),1)
+  ylim(yybnd);
+end
 xlabel('Time (ms)');
 ylabel('Volt');
 
