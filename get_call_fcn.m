@@ -41,19 +41,13 @@ for iC = 1:proc_call_num
     curr_call_global_idx = data.mic_data.call_idx_w_track(iC);  % idx of current call among all detected calls
 
     if dura_flag==1
-        iC
         ch_sel = data.mic_data.call(curr_call_global_idx).channel_marked;
-%         if ~isnan(call_sidx)  % if call start/end have been marked
-            call_sidx = data.mic_data.call(curr_call_global_idx).call_start_idx;
-            call_eidx = data.mic_data.call(curr_call_global_idx).call_end_idx;
-            sidx_in_long = call_sidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call start idx in extracted portion
-            eidx_in_long = call_eidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call end idx in extracted portion
-            call_template = call_long(sidx_in_long:eidx_in_long,ch_sel);  % curved out template for call
-            call_template_len_pt = length(call_template);
-%         else
-%             data.mic_data.call_idx_w_track(iC) = [];  % delete this call if call start/end haven't been marked
-%             continue;
-%         end
+        call_sidx = data.mic_data.call(curr_call_global_idx).call_start_idx;
+        call_eidx = data.mic_data.call(curr_call_global_idx).call_end_idx;
+        sidx_in_long = call_sidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call start idx in extracted portion
+        eidx_in_long = call_eidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call end idx in extracted portion
+        call_template = call_long(sidx_in_long:eidx_in_long,ch_sel);  % curved out template for call
+        call_template_len_pt = length(call_template);
     else
         call_len = data.param.call_short_len;
         call_portion_front = data.param.call_portion_front;
