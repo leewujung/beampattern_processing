@@ -18,13 +18,25 @@ if ~exist(save_dir,'dir')
 end
 load(['C:\Users\',username,'\Dropbox\0_CODE\beampattern_processing\bpf30.mat']);
 ``` 
-### Data types ###
+
+## Folder structure ##
+The various types of data should be placed into specific structures to be loaded by the code. Here's how the folder structure should look like:
+
+![folder structure](/img/folder_structure.png "Folder structure")
+
+There should be a spreadsheet (SPECIES_DATE_file_match.xlsx in above image) containing a list of matching files that specifies which combination of audio, animal position, and mic-related files are from the same experimental trial and should be processed together. Below is an example file showing how things go:
+
+![file matching list](/img/file_matching_list.png "List of matching files")
+
+The different data types and corresponding folders they should go in are explained in the following section.
+
+## Data types ##
 Data required for beampattern processing are the audio data, animal location, mic calibration/receiving beampattern, and mic info files that contain the other misc info from the experiment. Each type of the data are explained below. The example files are from an experiment with:
 * Audio recording: 34 channels, 4 second long, sampled at 250 kHz
 * Three-dimensional bat position recorded at 200 Hz also for 4 seconds
 * The audio and bat position recordings are synchronized using a stop-trigger, meaning the data saved were the 4 seconds *before* the trigger.
 
-#### Audio data ####
+### Audio data ###
 Audio data are MAT files with fields `sig` and `fs`. `sig` contains microphone recordings with data from each channel stored in each column. `fs` contains the sampling frequency of the audio data in Hz. For example, the example mentioned above would look like this when loaded into Matlab:
 ```
   Name            Size               Bytes  Class     Attributes
@@ -33,7 +45,7 @@ Audio data are MAT files with fields `sig` and `fs`. `sig` contains microphone r
   sig       1000002x34            264000528  double    
 ```
 
-#### Animal position ####
+### Animal position ###
 Animal positions are MAT files containing [x,y,z] positions of markers mounted on the animal's head or just the bat's rough position. It should look something this when loaded into Matlab:
 ```
   Name            Size            Bytes  Class     Attributes
@@ -56,7 +68,7 @@ This format is used because in my experiment three markers on a triangular frame
 * **NOTE**: add description of the processing procedure for extracting head aim/roll, including smoothing and interpolation here.
 * **NOTE**: need to update code by adding a switch for dealing with different number of markers
 
-#### Mic info ####
+### Mic info ###
 This is a MAT file containing miscellaneous information about the mics during experiment. The content should look like this when loaded into Matlab:
 ```
   Name           Size            Bytes  Class     Attributes
