@@ -28,12 +28,12 @@ data.param.tempC = (data.param.tempF-32)*9/5;  % temperature [deg C]
     air_absorption_vec(1e3,data.param.tempC,data.param.humid);
 data.path.bat_pos = './bat_pos';
 data.path.mic_data = './mic_data';
-data.path.mic_detect = './mic_detect';
+data.path.mic_detect = './mic_data';
 data.path.mic_info = './mic_info';
 data.path.mic_bp = './mic_bp';
 data.path.mic_sens = './mic_sens';
 data.path.proc_output = './proc_output';
-cd(data.path.base_dir);
+% cd(data.path.base_dir);
 
 
 %% Load all related files
@@ -63,7 +63,8 @@ data = load_mic_data(data);
 
 % Have fs and can calculate these params
 data.param.extract_call_len_pt = round(data.param.extract_call_len*1e-3*data.mic_data.fs);  % sample points
-data.param.extract_call_len_idx = -round((data.param.extract_call_len_pt+1)/2)+(1:data.param.extract_call_len_pt);
+data.param.extract_call_len_idx = -round((data.param.extract_call_len_pt+1)/2)+...
+  (1:data.param.extract_call_len_pt);
 
 % Calculate all angle info
 disp('Calculating all angle info...');
@@ -172,7 +173,6 @@ data.mic_loc = A.mic_loc(:,[3 1 2]);  % permute to get the x-y-z coordinate righ
 data.mic_vec = A.mic_vec(:,[3 1 2]);
 data.mic_vh = A.mic_vh;
 data.mic_gain = A.mic_gain;
-clear A
 
 
 function data = load_mic_bp_sens(data)
@@ -318,7 +318,7 @@ A = load(fullfile(data.path.base_dir,data.path.mic_data,data.files.mic_data));
 mic_data = load(fullfile(data.path.base_dir,data.path.mic_detect,data.files.mic_detect));
 mic_data.sig = A.sig;
 mic_data.fs = A.fs;
-clear A
+
 mic_data.sig_t = -fliplr(0:size(mic_data.sig,1)-1)/mic_data.fs;  % time stamps for mic signals [sec]
 data.mic_data = mic_data;
 data = get_call_on_seg_stuff(data);  % Get call idx info on selected track segment
