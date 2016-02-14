@@ -30,6 +30,9 @@ mic_sens_dB = interp1(data.mic_sens.freq,...
 
 % Mic beampattern: have to loop because interp2 is needed but bp is in 3D mtx
 bp_compensation = nan(size(call_psd_raw_dB));
+if isempty(bp_compensation)  % **call duration marking error**
+    continue
+end
 [X,Y] = meshgrid(data.mic_bp.theta,data.mic_bp.freq);
 for iM=1:length(bat_to_mic_angle)
     [XI,YI] = meshgrid(bat_to_mic_angle(iM),call_freq);

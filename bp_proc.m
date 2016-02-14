@@ -61,10 +61,6 @@ data = load_mic_data(data);
 
 %% Gather angle and call data
 
-% Have fs and can calculate these params
-data.param.extract_call_len_pt = round(data.param.extract_call_len*1e-3*data.mic_data.fs);  % sample points
-data.param.extract_call_len_idx = -round((data.param.extract_call_len_pt+1)/2)+(1:data.param.extract_call_len_pt);
-
 % Calculate all angle info
 disp('Calculating all angle info...');
 data = time_delay_btwn_bat_mic(data);
@@ -73,6 +69,10 @@ data = bat2mic(data);
 
 % Reserve space for GUI checking
 data.proc.chk_good_call = zeros((length(data.mic_data.call_idx_w_track)),1);  % set all to bad call
+if isempty(data.mic_data.call_idx_w_track)
+    disp('No calls with bat position info in this file!');
+    return
+end
 data.proc.ch_ex{length(data.mic_data.call_idx_w_track)} = [];  % channels to be excluded
 
 % Call amplitude calculation and compensation
@@ -321,19 +321,42 @@ mic_data.fs = A.fs;
 clear A
 mic_data.sig_t = -fliplr(0:size(mic_data.sig,1)-1)/mic_data.fs;  % time stamps for mic signals [sec]
 data.mic_data = mic_data;
-data = get_call_on_seg_stuff(data);  % Get call idx info on selected track segment
+
+% Have fs and can calculate these params
+data.param.extract_call_len_pt = round(data.param.extract_call_len*1e-3*data.mic_data.fs);  % sample points
+data.param.extract_call_len_idx = -round((data.param.extract_call_len_pt+1)/2)+(1:data.param.extract_call_len_pt);
+
+% Get call idx info on selected track segment
+data = get_call_on_seg_stuff(data);
 
 
 function data = get_call_on_seg_stuff(data)
 % Get call and idx info
-call_time = data.mic_data.sig_t([data.mic_data.call.locs]);
+
+% Adjust invalid index --> these will be deleted later in this function
+call_locs_ini = [data.mic_data.call.locs];
+call_locs_ini(call_locs_ini<1) = 1;
+call_time = data.mic_data.sig_t(call_locs_ini);
+% call_time = data.mic_data.sig_t([data.mic_data.call.locs]);
+
 nan_se_call_idx = isnan([data.mic_data.call.call_start_idx])|...  % Delete calls if start/end haven't been marked
                   isnan([data.mic_data.call.call_end_idx]);
 [~,track_interp_time_idx] = min(abs(repmat(call_time,length(data.track.track_interp_time),1)-...
                                     repmat(data.track.track_interp_time',1,length(call_time))),[],1);
 notnan_track_idx = isnan(data.head_aim.head_aim_int(track_interp_time_idx,1));   % Delete calls without track info
-bad_call_idx = find(~(nan_se_call_idx(:)|notnan_track_idx(:)));
-call_loc_idx_on_track_interp = track_interp_time_idx(bad_call_idx);
+good_call_idx = find(~(nan_se_call_idx(:)|notnan_track_idx(:)));
+call_loc_idx_on_track_interp = track_interp_time_idx(good_call_idx);
+
+% Only include calls with enough flanking region (front and back) to be extracted
+call_locs = [data.mic_data.call(good_call_idx).locs];
+call_idx_extract_len = (call_locs+data.param.extract_call_len_idx(1))>1 &...
+                       (call_locs+data.param.extract_call_len_idx(end))<size(data.mic_data.sig,1);
+good_call_idx = good_call_idx(call_idx_extract_len);
+
+% Delete calls in which the marked channel is the one without mic locations
+ch_sel = [data.mic_data.call(good_call_idx).channel_marked];
+nanidx_mic_loc = find(isnan(data.mic_loc(:,1)));
+good_call_idx = good_call_idx(~ismember(ch_sel,nanidx_mic_loc));
 
 % call_time(nan_se_call_idx) = [];
 % [~,track_interp_time_idx] = min(abs(repmat(call_time,length(data.track.track_interp_time),1)-...
@@ -342,6 +365,6 @@ call_loc_idx_on_track_interp = track_interp_time_idx(bad_call_idx);
 % call_loc_idx_on_track_interp = track_interp_time_idx(notnan_track_idx);
 
 % Save data
-data.mic_data.call_idx_w_track = bad_call_idx;  % idx of calls in mic_data.call within the selected track
+data.mic_data.call_idx_w_track = good_call_idx;  % idx of calls in mic_data.call within the selected track
 data.track.call_loc_idx_on_track_interp = call_loc_idx_on_track_interp;  % call emission location in terms of idx of interpolated track
 
