@@ -1,8 +1,9 @@
 ## Overview ##
 This set of Matlab code is written for processing and reconstructing beampatterns emitted by animals. The code include a processing component and a GUI that allow users to go through each of the calls for visual inspection and excluding/including specific channels if necessary.
 
-## Processing Code ##
-#### Batch processing starting file ####
+## Data Processing ##
+
+### Batch processing starting file ###
 The entry point of the code is `batch_bp_proc_example.m` in which an example is given to set up the various parameters and filenames for feeding into the main processing function `bp_proc`. 
 Paths to the folders in which the audio data, animal location, mic calibration, and mic receiving beampattern files are specified in the section below. The path set up for various types of data rare
 ```matlab
@@ -18,13 +19,24 @@ if ~exist(save_dir,'dir')
 end
 load(['C:\Users\',username,'\Dropbox\0_CODE\beampattern_processing\bpf30.mat']);
 ``` 
+
+### Folder structure ###
+The various types of data should be placed into specific structures to be loaded by the code. Here's how the folder structure should look like:
+
+![folder structure](/img/folder_structure.png "Folder structure")
+
+There should be a spreadsheet (`SPECIES_DATE_file_match.xlsx` in the above image) containing a list of matching files that specifies which combination of audio, animal position, and mic-related files are from the same experimental trial and should be processed together. The different data types and corresponding folders are explained in the following section. Below is an example showing how things go in the file matching list:
+
+![file matching list](/img/file_matching_list.png "List of matching files")
+
+
 ### Data types ###
 Data required for beampattern processing are the audio data, animal location, mic calibration/receiving beampattern, and mic info files that contain the other misc info from the experiment. Each type of the data are explained below. The example files are from an experiment with:
 * Audio recording: 34 channels, 4 second long, sampled at 250 kHz
 * Three-dimensional bat position recorded at 200 Hz also for 4 seconds
 * The audio and bat position recordings are synchronized using a stop-trigger, meaning the data saved were the 4 seconds *before* the trigger.
 
-#### Audio data ####
+#### Audio data (folder: mic_data and mic_detect) ####
 Audio data are MAT files with fields `sig` and `fs`. `sig` contains microphone recordings with data from each channel stored in each column. `fs` contains the sampling frequency of the audio data in Hz. For example, the example mentioned above would look like this when loaded into Matlab:
 ```
   Name            Size               Bytes  Class     Attributes
@@ -33,7 +45,7 @@ Audio data are MAT files with fields `sig` and `fs`. `sig` contains microphone r
   sig       1000002x34            264000528  double    
 ```
 
-#### Animal position ####
+#### Animal position (folder: bat_pos) ####
 Animal positions are MAT files containing [x,y,z] positions of markers mounted on the animal's head or just the bat's rough position. It should look something this when loaded into Matlab:
 ```
   Name            Size            Bytes  Class     Attributes
@@ -56,7 +68,7 @@ This format is used because in my experiment three markers on a triangular frame
 * **NOTE**: add description of the processing procedure for extracting head aim/roll, including smoothing and interpolation here.
 * **NOTE**: need to update code by adding a switch for dealing with different number of markers
 
-#### Mic info ####
+#### Mic info (folder: mic_info) ####
 This is a MAT file containing miscellaneous information about the mics during experiment. The content should look like this when loaded into Matlab:
 ```
   Name           Size            Bytes  Class     Attributes
@@ -68,7 +80,7 @@ This is a MAT file containing miscellaneous information about the mics during ex
 ```
 Here, `mic_gain` are the gains applied to the mic channels *in dB*, `mic_loc` are [x,y,z] locations of the mics, `mic_vec` are [x,y,z] vectors representing the base-to-tip direction of the mics. `mic_vh` is only used if the mics are arranged in a cross configuration. In this case the array entry is 1 if a particular mic belongs to the horizontal line and 0 if it belongs to the vertical line. `mic_vh` is empty if the mics are arranged in a irregular, non-cross configuration. This variable will be used for plotting in the GUI.
 
-#### Mic receiving beampattern ####
+#### Mic receiving beampattern (folder: mic_bp) ####
 This is a MAT file containing information about the receiving beampattern of each of the mics. The content should look like this when loaded into Matlab:
 ```
  Name        Size                  Bytes  Class     Attributes
@@ -78,9 +90,9 @@ This is a MAT file containing information about the receiving beampattern of eac
   src         1x1                 1563678  struct              
   theta       1x101                   808  double     
 ```
-Here, `bp` stores the receiving beampattern at `nf` frequencies listed in `freq` across `nt` polar angles listed in `theta`, for `nm` mic channels (in the example `nm=34`). Therefore, the dimension of `bp` is `[nfx nt x nm]`. The values in `bp` are normalized to the axis of the mic at `theta=0` in dB scale. `src` contains information about from which files these parameters come from. This variable is not used int the processing.
+Here, `bp` stores the receiving beampattern at `nf` frequencies listed in `freq` across `nt` polar angles listed in `theta`, for `nm` mic channels (in the example `nm=34`). Therefore, the dimension of `bp` is `[nfx nt x nm]`. The values in `bp` are normalized to the axis of the mic at `theta=0` in dB scale. `src` contains information about from which files these parameters come from. This variable is not used in the processing. Note that the sequence of the `nm` channels here should be ordered according to the sequence of the mic locations.
 
-#### Mic sensitivity ####
+#### Mic sensitivity (folder: mic_sens) ####
 This is a MAT file containing information about the sensitivity of each of the mics. The content should look like this when loaded into Matlab:
 ```
   Name        Size            Bytes  Class     Attributes
@@ -89,6 +101,6 @@ This is a MAT file containing information about the sensitivity of each of the m
   sens      129x34            35088  double              
   src         1x1             96210  struct  
 ```
-Here, `sens` stores the sensitivity at `nf` frequencies listed in `freq` for `nm` mic channels. Therefore, the dimension of `sens` is `[nf x nm]`. The values in `sens` are in dB re 1V/Pa. `src` contains information about from which files these parameters come from. This variable is not used int the processing.
+Here, `sens` stores the sensitivity at `nf` frequencies listed in `freq` for `nm` mic channels. Therefore, the dimension of `sens` is `[nf x nm]`. The values in `sens` are in dB re 1V/Pa. `src` contains information about from which files these parameters come from. This variable is not used in the processing. Note that the sequence of the `nm` channels here should be ordered according to the sequence of the mic locations.
 
-## GUI display ##
+## GUI Display ##
