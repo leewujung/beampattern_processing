@@ -4,8 +4,7 @@ This set of Matlab code is written for processing and reconstructing beampattern
 ## Data Processing
 
 ### Batch processing input file
-The entry point of the code is `batch_bp_proc_example.m` in which an example is given to set up the various parameters and filenames for feeding into the main processing function `bp_proc`. 
-Paths to the folders in which the audio data, animal location, mic calibration, and mic receiving beampattern files are specified in the section below. The path set up for various types of data rare
+The entry point of the code is `batch_bp_proc_example.m` in which an example is given to set up the various parameters and filenames for feeding into the main processing function `bp_proc`. The paths to folders with the various types of data (video, acoustic, calibration) are specified in the next section. The set up for path and some global parameters are:
 ```matlab
 username = getenv('username');
 pname = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing'];  % base path
@@ -20,16 +19,7 @@ end
 load(['C:\Users\',username,'\Dropbox\0_CODE\beampattern_processing\bpf30.mat']);  % filter use only when detecting Rousettus clicks
 ``` 
 
-### Folder structure
-The various types of data should be placed into specific structures to be loaded by the code. Here's how the folder structure should look like:
-
-![folder structure](/img/folder_structure.png "Folder structure")
-
-There should be a spreadsheet (`SPECIES_DATE_file_match.xlsx` in the above image) containing a list of matching files that specifies which combination of audio, animal position, and mic-related files are from the same experimental trial and should be processed together. The different data types and corresponding folders are explained in the following section. Below is an example showing how things go in the file matching list:
-
-![file matching list](/img/file_matching_list.png "List of matching files")
-
-Below are user-specified parameters needed for beampattern processing:
+Below are other user-specified parameters needed for beampattern processing:
 ```matlab
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data.track.fs = 200;   % video frame rate [Hz]
@@ -57,8 +47,18 @@ data.param.mic_floor_idx = [4,5,7,17,24,26,27];  % index of mics on floor, used 
 ```
 
 
+### Folder structure
+The various types of data should be placed into specific structures to be loaded by the code. Here's how the folder structure should look like:
+
+![folder structure](/img/folder_structure.png "Folder structure")
+
+There should be a spreadsheet (`SPECIES_DATE_file_match.xlsx` in the above image) containing a list of matching files that specifies which combination of audio, animal position, and mic-related files are from the same experimental trial and should be processed together. The different data types and corresponding folders are explained in the following section. Below is an example showing how things go in the file matching list:
+
+![file matching list](/img/file_matching_list.png "List of matching files")
+
+
 ### Data types
-Data required for beampattern processing are the audio data, animal location, mic calibration/receiving beampattern, and mic info files that contain the other misc info from the experiment. Each type of the data are explained below. The example files are from an experiment with:
+Data required for beampattern processing are the audio data, animal location, mic calibration/receiving beampattern, and mic info files that contain the other misc info from the experiment. The example files used here are from an experiment with:
 * Audio recording: 34 channels, 4 second long, sampled at 250 kHz
 * Three-dimensional bat position recorded at 200 Hz also for 4 seconds
 * The audio and bat position recordings are synchronized using a stop-trigger, meaning the data saved were the 4 seconds *before* the trigger.
