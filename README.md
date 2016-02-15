@@ -43,7 +43,7 @@ data.param.extract_call_len = 5;        % [ms] length of recording section isola
 data.param.tolernace = 2;               % tolerance for call misalignment, make it bigger when mic location uncertainty is large
 data.param.tukeywin_proportion = 0.25;  % proportional of tukeywin for call tapering
 data.param.dura_flag = 0;   % 1-use duration marked in the mic detect file (FM bats)
-% 0-use default detection stuff (Rousettus)
+                            % 0-use default detection stuff (Rousettus)
 
 % Below are only used when data.param.dura_flag=1, such as for Rousettus clicks
 data.param.call_short_len = 0.5;        % [ms] desired length of extracted call
