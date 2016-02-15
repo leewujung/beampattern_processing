@@ -1,9 +1,9 @@
-## Overview ##
-This set of Matlab code is written for processing and reconstructing beampatterns emitted by animals. The code include a processing component and a GUI that allow users to go through each of the calls for visual inspection and excluding/including specific channels if necessary.
+## Overview
+This set of Matlab code is written for processing and reconstructing beampatterns emitted by animals. The code includes a processing component and a GUI that allow users to go through each of the calls for visual inspection and excluding/including specific channels if necessary.
 
-## Data Processing ##
+## Data Processing
 
-### Batch processing starting file ###
+### Batch processing starting file
 The entry point of the code is `batch_bp_proc_example.m` in which an example is given to set up the various parameters and filenames for feeding into the main processing function `bp_proc`. 
 Paths to the folders in which the audio data, animal location, mic calibration, and mic receiving beampattern files are specified in the section below. The path set up for various types of data rare
 ```matlab
@@ -20,7 +20,7 @@ end
 load(['C:\Users\',username,'\Dropbox\0_CODE\beampattern_processing\bpf30.mat']);
 ``` 
 
-### Folder structure ###
+### Folder structure
 The various types of data should be placed into specific structures to be loaded by the code. Here's how the folder structure should look like:
 
 ![folder structure](/img/folder_structure.png "Folder structure")
@@ -30,13 +30,13 @@ There should be a spreadsheet (`SPECIES_DATE_file_match.xlsx` in the above image
 ![file matching list](/img/file_matching_list.png "List of matching files")
 
 
-### Data types ###
+### Data types
 Data required for beampattern processing are the audio data, animal location, mic calibration/receiving beampattern, and mic info files that contain the other misc info from the experiment. Each type of the data are explained below. The example files are from an experiment with:
 * Audio recording: 34 channels, 4 second long, sampled at 250 kHz
 * Three-dimensional bat position recorded at 200 Hz also for 4 seconds
 * The audio and bat position recordings are synchronized using a stop-trigger, meaning the data saved were the 4 seconds *before* the trigger.
 
-#### Audio data (folder: mic_data and mic_detect) ####
+#### Audio data (folder: mic_data and mic_detect)
 Audio data are MAT files with fields `sig` and `fs`. `sig` contains microphone recordings with data from each channel stored in each column. `fs` contains the sampling frequency of the audio data in Hz. For example, the example mentioned above would look like this when loaded into Matlab:
 ```
   Name            Size               Bytes  Class     Attributes
@@ -45,8 +45,8 @@ Audio data are MAT files with fields `sig` and `fs`. `sig` contains microphone r
   sig       1000002x34            264000528  double    
 ```
 
-#### Animal position (folder: bat_pos) ####
-Animal positions are MAT files containing [x,y,z] positions of markers mounted on the animal's head or just the bat's rough position. It should look something this when loaded into Matlab:
+#### Animal position (folder: bat_pos)
+Animal positions are MAT files containing [x,y,z] positions of markers mounted on the animal's head or just the bat's rough position. The position of each marker should be stored in different cells. For data set in which there are 3 markers (explained below), the structure should look like this when loaded into Matlab:
 ```
   Name            Size            Bytes  Class     Attributes
 
@@ -63,12 +63,20 @@ and
 markers = 
     'Tip'    'Left'    'Right'
 ```
-This format is used because in my experiment three markers on a triangular frame was mounted on the bat's head for monitoring the head aim and head roll during the recording. For data set with only one position at each time point, make the content of all three cells in `bat_pos` identical. For data set with two positions (e.g., front and back markers), put the positions of the front marker in the first cell and the position of the back marker in the second and third cell in `bat_pos`. The code will extract head aim and head roll based on these data.
+This format was used in my experiment where three markers on a triangular frame was mounted on the bat's head for monitoring the head aim and head roll during recording. The code calculates the head aim and head normal vectors based on these marker positions (in subfunction `load_bat_pos`). For video frames with missing markers, the code uses the trajectory differential as the head aim vector in x-y plane (with z=0), and calculates a head normal that is orthogonal to all the mics on the floor (mics identified by `data.param.mic_floor_idx` in the batch processing input file). This orthogonal head normal vector can also be derived using all the mics placed as a horizontal 1D array on the wall.
 
-* **NOTE**: add description of the processing procedure for extracting head aim/roll, including smoothing and interpolation here.
-* **NOTE**: need to update code by adding a switch for dealing with different number of markers
+For data set with only one position at each time point, the structure would then be:
+```
+  Name            Size            Bytes  Class     Attributes
 
-#### Mic info (folder: mic_info) ####
+  bat_pos         1x1             19792  cell                
+```
+The code calculates the head aim vector based on the trajectory differential. The user should supply the head normal vector by setting `data.track.head_n_prescribe` in the batch processing input file.
+
+Note the trajectories are smoothed when loaded. The length of smoothing is set by `data.track.smooth_len` in the batch processing input file. The time span over which the trajectory differential is used for estimating the head aim is set by `data.track.head_aim_est_time_diff` in [sec].
+
+
+#### Mic info (folder: mic_info)
 This is a MAT file containing miscellaneous information about the mics during experiment. The content should look like this when loaded into Matlab:
 ```
   Name           Size            Bytes  Class     Attributes
@@ -80,7 +88,7 @@ This is a MAT file containing miscellaneous information about the mics during ex
 ```
 Here, `mic_gain` are the gains applied to the mic channels *in dB*, `mic_loc` are [x,y,z] locations of the mics, `mic_vec` are [x,y,z] vectors representing the base-to-tip direction of the mics. `mic_vh` is only used if the mics are arranged in a cross configuration. In this case the array entry is 1 if a particular mic belongs to the horizontal line and 0 if it belongs to the vertical line. `mic_vh` is empty if the mics are arranged in a irregular, non-cross configuration. This variable will be used for plotting in the GUI.
 
-#### Mic receiving beampattern (folder: mic_bp) ####
+#### Mic receiving beampattern (folder: mic_bp)
 This is a MAT file containing information about the receiving beampattern of each of the mics. The content should look like this when loaded into Matlab:
 ```
  Name        Size                  Bytes  Class     Attributes
