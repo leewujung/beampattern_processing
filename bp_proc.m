@@ -183,7 +183,7 @@ data.mic_bp = load(fullfile(data.path.base_dir,data.path.mic_bp,data.files.mic_b
 function data = load_bat_pos(data,cut_idx)
 bat = load(fullfile(data.path.base_dir,data.path.bat_pos,data.files.bat_pos));
 sm_len = data.track.smooth_len;  % track smoothing length
-diff_len = round(data.track.head_aim_est_time_diff*data.track.fs);  % pt difference for estimating head aim from track
+diff_len = round(data.track.head_aim_est_time_diff*data.track.fs/1e3);  % pt difference for estimating head aim from track
 
 if length(bat.bat_pos)==1  % 1 marker on head/bat position
     % Raw tracks
