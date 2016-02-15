@@ -182,77 +182,117 @@ data.mic_bp = load(fullfile(data.path.base_dir,data.path.mic_bp,data.files.mic_b
 
 function data = load_bat_pos(data,cut_idx)
 bat = load(fullfile(data.path.base_dir,data.path.bat_pos,data.files.bat_pos));
+sm_len = data.track.smooth_len;  % track smoothing length
+diff_len = round(data.track.head_aim_est_time_diff*data.track.fs);  % pt difference for estimating head aim from track
 
-% Raw tracks
-pos = cell2mat(bat.bat_pos);
-pos = reshape(pos,length(pos),3,[]);
-if isempty(cut_idx)
-    cut_idx = 1:size(pos,1);
+if length(bat.bat_pos)==1  % 1 marker on head/bat position
+    % Raw tracks
+    pos = cell2mat(bat.bat_pos);
+    if isempty(cut_idx)  % extract only the part with acoustic data
+        cut_idx = 1:size(pos,1);
+    end
+    track = pos(cut_idx,:);
+    track_t = -fliplr(0:size(track,1)-1)/data.track.fs;  % Time stamp of the track [sec]
+
+    % Find segments and smoothing
+    seg_idx = find_seg(track,sm_len);  % continuous segment
+    track_sm = sm_track(track(:,[3 1 2]),sm_len,seg_idx);  % smoothing
+    
+    % Get head aim and head normal
+    head_aim = nan(size(track_sm));
+    head_aim(1:end-diff_len+1,:) = [track_sm(diff_len:end,1:2)-track_sm(1:end-diff_len+1,1:2),zeros(size(track_sm,1)-diff_len+1,1)];
+    head_aim = norm_mtx_vec(head_aim);
+    
+    head_n = nan(size(track_sm));
+    notnanidx_head_n = ~isnan(head_aim(:,1));
+    head_n(notnanidx_head_n,:) = repmat(data.track.head_n_prescribe,sum(notnanidx_head_n),1);
+    
+    % Interpolate to finer resolution for aligning calls
+    track_int_t_interval = 1e-3;  % interpolate to 1ms interval
+    track_int_t = track_t(1):track_int_t_interval:track_t(end);
+    track_int = int_track(track_t,track_sm,track_int_t);
+    head_aim_int = int_track(track_t,head_aim,track_int_t);
+    head_n_int = int_track(track_t,head_n,track_int_t);
+    
+    % Indicator of where head aim/normal comes from
+    marker_indic = zeros(size(track_int,1),1);  % 0-head aim derived from track
+    
+    % Save raw and smoothed marker positions
+    data.track.marked_pos = pos(:,[3 1 2]);
+    
+    
+elseif length(bat.bat_pos)==3  % 3 markers on the head
+    % Raw tracks
+    pos = cell2mat(bat.bat_pos);
+    pos = reshape(pos,length(pos),3,[]);
+    if isempty(cut_idx)  % extract only the part with acoustic data
+        cut_idx = 1:size(pos,1);
+    end
+    pos = pos(cut_idx,:,:);
+    track = nanmean(pos,3);  % raw bat track: mean of three points
+    % track_all3 = mean(pos,3);  % raw bat track with all 3 points presents
+    % track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
+    track_t = -fliplr(0:size(track,1)-1)/data.track.fs;  % Time stamp of the track [sec]
+    
+    % Find segments
+    seg_idx = find_seg(track,sm_len);
+    % seg_idx_all3 = find_seg(track_all3,sm_len);
+    seg_idx_tip = find_seg(pos(:,:,1),sm_len);
+    seg_idx_left = find_seg(pos(:,:,2),sm_len);
+    seg_idx_right = find_seg(pos(:,:,3),sm_len);
+    
+    % Smooth track and marker pos
+    track_sm = sm_track(track(:,[3 1 2]),sm_len,seg_idx);
+    tip = sm_track(pos(:,[3 1 2],1),sm_len,seg_idx_tip);
+    left = sm_track(pos(:,[3 1 2],2),sm_len,seg_idx_left);
+    right = sm_track(pos(:,[3 1 2],3),sm_len,seg_idx_right);
+    
+    head_aim = norm_mtx_vec(tip-(left+right)/2);
+    head_n = norm_mtx_vec(cross(tip-left,tip-right));
+    
+    % Interpolate to finer resolution for aligning calls
+    track_int_t_interval = 1e-3;  % interpolate to 1ms interval
+    track_int_t = track_t(1):track_int_t_interval:track_t(end);
+    track_int = int_track(track_t,track_sm,track_int_t);
+    head_aim_int = int_track(track_t,head_aim,track_int_t);
+    head_n_int = int_track(track_t,head_n,track_int_t);
+    
+    % Indicator of where head aim/normal comes from
+    marker_indic = zeros(size(track_int,1),1);
+    marker_indic(~isnan(head_aim_int(:,1))) = 1;  % 1-head aim derived from interpolated marker locations
+                                                  % 0-head aim derived from track
+    
+    % Fake head aim from smoothed track
+    head_aim_fake = [track_sm(sm_len:end,1:2)-track_sm(1:end-sm_len+1,1:2),zeros(size(track_sm,1)-sm_len+1,1)];
+    head_aim_fake = norm_mtx_vec(head_aim_fake);
+    head_aim_fake_int = int_track(track_t(1:end-sm_len+1),head_aim_fake,track_int_t);
+    
+    % Fake head normal from mics on the floor
+    A = data.mic_loc(data.param.mic_floor_idx,:);
+    A0 = bsxfun(@minus,A,mean(A,1)); % Subtract "mean" point
+    [~,~,V] = svd(A0,0);
+    norm_vec = norm_mtx_vec(V(:,3)');
+    
+    % Fill in gaps for head aim and head normal
+    nanidx = isnan(head_aim_int(:,1));
+    head_aim_int(nanidx,:) = head_aim_fake_int(nanidx,:);
+    head_n_int(nanidx,:) = repmat(norm_vec,sum(nanidx),1);
+    
+    % Save raw and smoothed marker positions
+    data.track.marked_pos = pos(:,[3 1 2],:);
+    data.track.tip_smooth = tip;
+    data.track.left_smooth = left;
+    data.track.right_smooth = right;
 end
-pos = pos(cut_idx,:,:);
-track = nanmean(pos,3);  % raw bat track: mean of three points
-% track_all3 = mean(pos,3);  % raw bat track with all 3 points presents
-% track = track(:,[3 1 2]);  % change axis sequence to corresponding the ground reference
-track_t = -fliplr(0:size(track,1)-1)/data.track.fs;  % Time stamp of the track [sec]
 
-% Find segments
-sm_len = 10;
-seg_idx = find_seg(track,sm_len);
-% seg_idx_all3 = find_seg(track_all3,sm_len);
-seg_idx_tip = find_seg(pos(:,:,1),sm_len);
-seg_idx_left = find_seg(pos(:,:,2),sm_len);
-seg_idx_right = find_seg(pos(:,:,3),sm_len);
-
-% Smooth track and marker pos
-track_sm = sm_track(track(:,[3 1 2]),sm_len,seg_idx);
-tip = sm_track(pos(:,[3 1 2],1),sm_len,seg_idx_tip);
-left = sm_track(pos(:,[3 1 2],2),sm_len,seg_idx_left);
-right = sm_track(pos(:,[3 1 2],3),sm_len,seg_idx_right);
-
-head_aim = norm_mtx_vec(tip-(left+right)/2);
-head_n = norm_mtx_vec(cross(tip-left,tip-right));
-
-% Interpolate to finer resolution for aligning calls
-track_int_t_interval = 1e-3;  % interpolate to 1ms interval
-track_int_t = track_t(1):track_int_t_interval:track_t(end);
-track_int = int_track(track_t,track_sm,track_int_t);
-head_aim_int = int_track(track_t,head_aim,track_int_t);
-head_n_int = int_track(track_t,head_n,track_int_t);
-
-% Indicator of where head aim/normal comes from
-marker_indic = zeros(size(track_int,1),1);
-marker_indic(~isnan(head_aim_int(:,1))) = 1;  % 1-head aim derived from interpolated marker locations
-                                         % 0-head aim derived from track
-
-% Fake head aim from smoothed track
-head_aim_fake = [track_sm(sm_len:end,1:2)-track_sm(1:end-sm_len+1,1:2),zeros(size(track_sm,1)-sm_len+1,1)];
-head_aim_fake = norm_mtx_vec(head_aim_fake);                      
-head_aim_fake_int = int_track(track_t(1:end-sm_len+1),head_aim_fake,track_int_t);
-
-% Fake head normal from mics on the floor
-A = data.mic_loc(data.param.mic_floor_idx,:);
-A0 = bsxfun(@minus,A,mean(A,1)); % Subtract "mean" point
-[~,~,V] = svd(A0,0);
-norm_vec = norm_mtx_vec(V(:,3)');
-
-% Fill in gaps for head aim and head normal
-nanidx = isnan(head_aim_int(:,1));
-head_aim_int(nanidx,:) = head_aim_fake_int(nanidx,:);
-head_n_int(nanidx,:) = repmat(norm_vec,sum(nanidx),1);
-
-% Save data
-data.track.marked_pos = pos(:,[3 1 2],:);
-data.track.smooth_len = sm_len;
+% Save trajectory
 data.track.track_raw = track;
 data.track.track_raw_time = track_t;
 data.track.track_smooth = track_sm;
-data.track.tip_smooth = tip;
-data.track.left_smooth = left;
-data.track.right_smooth = right;
 data.track.track_interp = track_int;
 data.track.track_interp_time = track_int_t;
 
-data.track.marker_indicator = marker_indic;
+data.track.marker_indicator = marker_indic;  % Indicator of where head aim/normal comes from
 
 data.head_aim.head_aim_smooth = head_aim;
 data.head_aim.head_aim_int = head_aim_int;
@@ -263,6 +303,7 @@ data.head_normal.head_normal_int = head_n_int;
 
 
 function seg_idx = find_seg(pos,sm_len)
+% Find continous segment in the trajectories with small gaps filled
 notnan = ~isnan(pos(:,1));
 idx_nan = find(diff(notnan)~=0)+1;
 
