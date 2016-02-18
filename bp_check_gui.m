@@ -432,7 +432,9 @@ end
 if isequal(save_fname,0)
     return
 end
+disp('Saving...')
 save(fullfile(save_pname,save_fname),'-struct','data');
+disp(['Saved file: ' save_fname ' at ' datestr(now,'MM:SS PM')])
 
 
 function edit_bp_freq_Callback(hObject, eventdata, handles)

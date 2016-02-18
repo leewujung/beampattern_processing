@@ -59,6 +59,10 @@ azqm(isnan(vq_norm)) = NaN;
 
 axes(handles.axes_bp);
 cla
+if ~license('test', 'map_toolbox')
+  disp('requires mapping toolbox, exiting')
+  return;
+end
 axesm eckert4;
 framem('fedgecolor',200*ones(1,3)/255,'flonlimit',[-120 120]);
 gridm('gcolor',190*ones(1,3)/255,'glinestyle','-');
