@@ -51,6 +51,13 @@ for iC = 1:proc_call_num
             call_template_len_pt = length(call_template);
         catch
             fprintf('Call duration marking is problematic in Call #%d\n',data.mic_data.call_idx_w_track(iC));
+            % Fake save data ====================================
+            data.proc.call_align_short(iC,:) = cell(1,num_ch);
+            data.proc.call_align_short_se_idx(iC,:,:) = nan(num_ch,2);
+            data.proc.call_fft(iC,:) = cell(1,num_ch);  % call spectrum
+            data.proc.call_freq_vec(iC,:) = cell(1,num_ch);  % frequency vector for call spectrum
+            data.proc.call_psd_raw_linear(iC,:) = cell(1,num_ch);  % spectrum of extracted calls, linear scale
+            data.proc.call_psd_raw_dB(iC,:) = cell(1,num_ch);   % spectrum of extracted calls, dB scale
             continue
         end
     else

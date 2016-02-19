@@ -13,6 +13,7 @@ bat_to_mic_angle = data.proc.bat_to_mic_angle(iC,:);   % angle to compensate for
 % call_psd_raw_dB = data.proc.call_psd_raw_dB{iC};  % call spectrum in dB scale
 call_psd_raw_dB = cell2mat(data.proc.call_psd_raw_dB(iC,:)')';  % call spectrum in dB scale
 call_freq = cell2mat(data.proc.call_freq_vec(iC,1));  % frequency vector of the call spectrum
+num_ch = data.mic_data.num_ch_in_file;  % number of channels in file
 d0 = 0.1;  % [m] reference distance from bat
 
 % Transmission loss: air absorption and spreading loss
@@ -31,6 +32,20 @@ mic_sens_dB = interp1(data.mic_sens.freq,...
 % Mic beampattern: have to loop because interp2 is needed but bp is in 3D mtx
 bp_compensation = nan(size(call_psd_raw_dB));
 if isempty(bp_compensation)  % **call duration marking error**
+    % Fake save data
+    data.param.d0 = d0;
+    data.param.alpha(iC,:) = cell(1,num_ch);
+    data.param.alpha_iso(iC,:) = cell(1,num_ch);
+    data.proc.air_attn_dB(iC,:) = cell(1,num_ch);
+    data.proc.spreading_loss_dB(iC,:) = cell(1,num_ch);
+    data.proc.TL_dB(iC,:) = cell(1,num_ch);
+    data.proc.mic_bp_compensation_dB(iC,:) = cell(1,num_ch);
+    data.proc.mic_sens_dB(iC,:) = cell(1,num_ch);
+    data.proc.call_psd_dB_comp_nobp(iC,:) = cell(1,num_ch);
+    data.proc.call_psd_dB_comp_withbp(iC,:) = cell(1,num_ch);
+    data.proc.call_psd_dB_comp_re20uPa_nobp(iC,:) = cell(1,num_ch);
+    data.proc.call_psd_dB_comp_re20uPa_withbp(iC,:) = cell(1,num_ch);
+    data.proc.call_p2p_SPL_comp_re20uPa(iC) = NaN;
     continue
 end
 [X,Y] = meshgrid(data.mic_bp.theta,data.mic_bp.freq);
