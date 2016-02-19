@@ -96,7 +96,8 @@ for iC = 1:proc_call_num
         call_short_se_idx = nan(num_ch,2);
         for iM=1:num_ch
             if ~isnan(data.mic_loc(iM,1))  % if mic location available
-                maxenv = max(ch_xcorr_env(:,iM));
+%                 maxenv = max(ch_xcorr_env(:,iM));
+                maxenv = max(ch_xcorr_env(chk_se_idx,iM));
                 if maxenv>maxenv_top*0.5  % if strong signal consider secondary arrival
                     [~,ch_xcorr_pk_idx_tmp] = findpeaks(ch_xcorr_env(chk_se_idx,iM),'SortStr','descend','MinPeakDistance',50,'MinPeakHeight',maxenv*0.5);
                     ch_xcorr_pk_idx_tmp = min(ch_xcorr_pk_idx_tmp);  % take the first arrival in case there is stronger echo
@@ -194,7 +195,8 @@ for iC = 1:proc_call_num
             else
                 [ch_xcorr(:,iM),~] = xcorr(call_long(:,iM),call_template);
                 ch_xcorr_env(:,iM) = abs(hilbert(ch_xcorr(:,iM)));
-                maxenv = max(ch_xcorr_env(:,iM));
+%                 maxenv = max(ch_xcorr_env(:,iM));  % originally use max of the full length
+                maxenv = max(ch_xcorr_env(chk_se_idx,iM));  % now only use max of the considered section
                 if maxenv>maxenv_top*0.5  % if strong signal consider secondary arrival
                     [ch_mm_tmp,ch_xcorr_pk_idx_tmp] = findpeaks(ch_xcorr_env(chk_se_idx,iM),'SortStr','descend','MinPeakDistance',50,'MinPeakHeight',maxenv*0.5);
                     ch_xcorr_pk_idx_tmp = min(ch_xcorr_pk_idx_tmp);  % take the first arrival in case there is stronger echo

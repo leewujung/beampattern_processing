@@ -5,7 +5,7 @@
 username = getenv('username');
 pname = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing'];  % base path
 fname = 'eptesicus_20150824_file_match.xlsx';  % spreadsheet containing all matching files of different types
-trial_to_proc = 11:25;   % row index of the trials to process in the spreadsheet above
+trial_to_proc = 1:10;   % row index of the trials to process in the spreadsheet above
 chk_indiv_call = 1;     % whether to display the cut-out section for each call/channel
 track_cut_idx = 1:800;  % index for frames with acoustic data
 save_dir = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing\proc_output_eptesicus_new'];  % path to save processing output
