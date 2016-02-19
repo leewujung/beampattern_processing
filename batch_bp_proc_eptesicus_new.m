@@ -1,5 +1,6 @@
 % 2015 10 23  Process beampattern data and save to folder
 % 2016 02 15  Update for 1 marker case
+% 2016 02 18  Include a command window log file
 
 username = getenv('username');
 pname = ['C:\Users\',username,'\Dropbox\0_ANALYSIS\bp_processing'];  % base path
@@ -12,6 +13,22 @@ if ~exist(save_dir,'dir')
     mkdir(save_dir);
 end
 load(['C:\Users\',username,'\Dropbox\0_CODE\beampattern_processing\bpf30.mat']);  % filter use only when detecting Rousettus clicks
+
+% Create command window log file
+s1 = strsplit(fname,'_');
+s1 = s1{1};
+t = datetime('now');
+log_fname = sprintf('log_%s_%s.txt',s1,datestr(t,'yyyymmdd_HHMMSS'));
+fileID = fopen(fullfile(save_dir,log_fname),'w');
+fprintf(fileID,'Beampattern processing using file: ');
+fprintf(fileID,'%s\n',fname);
+fprintf(fileID,'\r\n');
+fprintf(fileID,'Processing start time: %s\r\n',datestr(t,'yyyy/mm/dd HH:MM:SS'));
+fprintf(fileID,'\r\n');
+fclose(fileID);
+
+diary(fullfile(save_dir,log_fname));
+diary on
 
 for tnum = trial_to_proc
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,4 +61,6 @@ for tnum = trial_to_proc
     
     clear data
 end
+
+diary off
 
