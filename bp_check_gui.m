@@ -432,8 +432,9 @@ end
 if isequal(save_fname,0)
     return
 end
+disp('Saving...')
 save(fullfile(save_pname,save_fname),'-struct','data');
-
+disp('Saved')
 
 
 
