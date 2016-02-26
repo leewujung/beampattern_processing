@@ -16,8 +16,14 @@ end
 
 mic_to_bat_angle = squeeze(data.proc.mic_to_bat_angle_x(gui_op.current_call_idx,:,:));
 freq_wanted = str2num(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
-[~,fidx] = min(abs(freq_wanted-data.proc.call_freq_vec{gui_op.current_call_idx}));
-call_dB = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx}(fidx,:);
+
+call_dB = nan(1,data.mic_data.num_ch_in_file);
+for iM=1:data.mic_data.num_ch_in_file
+    freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
+    [~,fidx] = min(abs(freq-freq_wanted));
+    call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+end
+
 
 % Check for channels to be excluded
 if isempty(data.proc.ch_ex{gui_op.current_call_idx})
@@ -48,13 +54,12 @@ end
 
 az_plot = [az,az_amp(:),find(az_idx)];
 az_plot = sortrows(az_plot,1);
-% [az_xy(:,1),az_xy(:,2)] = pol2cart(az_plot(:,1),az_plot(:,2));
 el_plot = [el,el_amp(:),find(el_idx)];
 el_plot = sortrows(el_plot,1);
-% [el_xy(:,1),el_xy(:,2)] = pol2cart(el_plot(:,1),el_plot(:,2));
 
 % Plot elevation polar circle
 axes(handles.axes_bp_contour);
+cla(handles.axes_bp_contour,'reset');
 polar(el_plot(:,1),el_plot(:,2),'.-');
 title('Elevation');
 % ff = findall(gca,'type','text');
@@ -67,6 +72,7 @@ title('Elevation');
 
 % Plot azimuth polar circle
 axes(handles.axes_bp);
+cla(handles.axes_bp,'reset');
 polar(az_plot(:,1),az_plot(:,2),'.-');
 title('Azimuth');
 

@@ -58,7 +58,7 @@ azqm = azq;
 azqm(isnan(vq_norm)) = NaN;
 
 axes(handles.axes_bp);
-cla
+cla(handles.axes_bp,'reset');
 axesm eckert4;
 framem('fedgecolor',200*ones(1,3)/255,'flonlimit',[-120 120]);
 gridm('gcolor',190*ones(1,3)/255,'glinestyle','-');
@@ -81,7 +81,7 @@ contour_vec = 0:-3:(floor(vq_norm_min/3)-1)*3;
 cvec_min_idx = find(contour_vec-vq_norm_min<0,1,'first');
 
 axes(handles.axes_bp_contour);
-cla
+cla(handles.axes_bp_contour,'reset');
 axesm eckert4;
 framem('fedgecolor',200*ones(1,3)/255,'flonlimit',[-180 180]);
 gridm('gcolor',190*ones(1,3)/255,'glinestyle','-');
