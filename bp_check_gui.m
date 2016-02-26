@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 17-Nov-2015 21:56:31
+% Last Modified by GUIDE v2.5 23-Feb-2016 14:46:52
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -432,8 +432,31 @@ end
 if isequal(save_fname,0)
     return
 end
+disp('Saving...')
 save(fullfile(save_pname,save_fname),'-struct','data');
+disp('Saved')
 
+
+
+
+% --- Executes on button press in button_export_good_calls.
+function button_export_good_calls_Callback(hObject, eventdata, handles)
+% hObject    handle to button_export_good_calls (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+data = getappdata(0,'data');
+[save_fname,save_pname] = uiputfile('*.mat','Export checked results',...
+    fullfile(data.path.proc_data,[data.files.proc_data(1:end-4) '_checked.mat']));
+if isequal(save_fname,0)
+    return
+end
+
+export_data=struct();
+export_data.proc.chk_good_call = data.proc.chk_good_call;
+export_data.proc.ch_ex = data.proc.ch_ex;
+
+save(fullfile(save_pname,save_fname),'-struct','export_data');
+disp('Exported')
 
 function edit_bp_freq_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_bp_freq (see GCBO)
