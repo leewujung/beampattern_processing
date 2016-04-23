@@ -291,10 +291,13 @@ function text_current_call1_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
-gui_op.current_call_idx = mod(str2double(get(hObject,'String')),length(data.mic_data.call));
-if gui_op.current_call_idx==0
-    gui_op.current_call_idx = length(data.mic_data.call);
+entered_call_num=str2double(get(hObject,'String'));
+if entered_call_num > length(data.mic_data.call_idx_w_track)
+    entered_call_num=length(data.mic_data.call_idx_w_track);
+elseif entered_call_num < 1
+    entered_call_num=1;
 end
+gui_op.current_call_idx = entered_call_num;
 setappdata(0,'data',data);
 setappdata(0,'gui_op',gui_op);
 

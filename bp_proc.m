@@ -33,7 +33,7 @@ data.path.mic_info = './mic_info';
 data.path.mic_bp = './mic_bp';
 data.path.mic_sens = './mic_sens';
 data.path.proc_output = './proc_output';
-cd(data.path.base_dir);
+% cd(data.path.base_dir);
 
 
 %% Load all related files
