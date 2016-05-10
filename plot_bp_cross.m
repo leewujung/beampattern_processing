@@ -59,7 +59,7 @@ else
 end
 
 az_plot = [az,az_amp(:),find(az_idx)];
-az_plot = sortrows(az_plot,1);
+[az_plot,sort_index] = sortrows(az_plot,1);
 el_plot = [el,el_amp(:),find(el_idx)];
 el_plot = sortrows(el_plot,1);
 
@@ -105,10 +105,10 @@ title('Elevation');
 axes(handles.axes_bp);
 cla(handles.axes_bp,'reset');
 if ~isempty(az_x)
-    pp = polar(-az_plot(:,1),az_plot(:,2),'.-');  % flip az +/-
+    pp = polar(az_plot(:,1),az_plot(:,2),'.-');  % flip az +/-
     set(pp,'markersize',20);
     hold on
-    text(az_x,-az_y,num2str(mic_az(:)),'color','r');  % flip az +/-
+    text(az_x,az_y,num2str(mic_az(sort_index)'),'color','r');  % flip az +/-
 else
     polar(0,0,'.-');
 end
