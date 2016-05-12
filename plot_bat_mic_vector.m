@@ -150,6 +150,7 @@ if isappdata(0,'track_gui_handles')
         '-+','linewidth',1,'color',[.4 .4 .4]);
       if plot_mic_nums
         mics_data=find(angle_notnanidx);
+        mics_data=mics_data(indx_flat);
         mics_sorted=mics_data(isort);
         h_beam_text = text(repmat(bat(1),size(Bx))+Bx,repmat(bat(2),size(By))+By,...
           num2str(mics_sorted'));
