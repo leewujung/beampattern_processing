@@ -620,6 +620,12 @@ if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loade
         plot_bp_2d(handles);  % display beampattern
     end
 end
+if isappdata(0,'track_gui_handles')
+  track_gui_handles = getappdata(0,'track_gui_handles'); 
+  if get(track_gui_handles.checkbox_top_view_bp,'value')
+    plot_bat_mic_vector;
+  end
+end
 
 
 % --- Executes when selected object is changed in interp_radio_grp.
