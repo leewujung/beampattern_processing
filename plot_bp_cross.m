@@ -88,7 +88,7 @@ if ~isempty(el_x)
     pp = polar(el_plot(:,1),el_plot(:,2),'.-');
     set(pp,'markersize',20);
     hold on
-    text(el_x,el_y,{num2str(mic_el(:))});
+    text(el_x,el_y,num2str(el_plot(:,3)));
 else
     polar(0,0,'.-');
 end
