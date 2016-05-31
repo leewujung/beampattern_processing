@@ -17,6 +17,7 @@ if isappdata(0,'track_gui_handles')
     
     % plot
     axes(track_gui_handles.axes2);
+    [vaz,vel]=view;
     corder = get(gca,'colororder');  % get line colors
     set(track_gui_handles.h_curr_call,...
         'Xdata',data.track.track_interp(data.track.call_loc_idx_on_track_interp(gui_op.current_call_idx),1),...
@@ -160,7 +161,7 @@ if isappdata(0,'track_gui_handles')
       track_gui_handles.h_beam_patt = h_beam_patt;
       track_gui_handles.h_beam_text = h_beam_text;
     else
-      view(3)
+      view(vaz,vel)
     end
     
     
