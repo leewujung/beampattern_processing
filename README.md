@@ -113,7 +113,7 @@ This is a MAT file containing miscellaneous information about the mics during ex
   mic_vec       34x3               816  double              
   mic_vh        34x1                 0  double              
 ```
-Here, `mic_gain` are the gains applied to the mic channels *in dB*, `mic_loc` are [x,y,z] locations of the mics, `mic_vec` are [x,y,z] vectors representing the base-to-tip direction of the mics. `mic_vh` is only used if the mics are arranged in a cross configuration. In this case the array entry is 1 if a particular mic belongs to the horizontal line and 0 if it belongs to the vertical line. `mic_vh` is empty if the mics are arranged in a irregular, non-cross configuration. This variable will be used for plotting in the GUI.
+Here, `mic_gain` are the gains applied to the mic channels *in dB*, `mic_loc` are [x,y,z] locations of the mics, `mic_vec` are [x,y,z] vectors representing the base-to-tip direction of the mics. `mic_vh` is only used if the mics are arranged in a cross configuration. In this case the array entry is 1 if a particular mic belongs to the horizontal line and 0 if it belongs to the vertical line, and 0.5 to be considered in both (e.g. center mic). `mic_vh` is empty if the mics are arranged in a irregular, non-cross configuration. This variable will be used for plotting in the GUI.
 
 #### Mic receiving beampattern (folder: mic_bp)
 This is a MAT file containing information about the receiving beampattern of each of the mics. The content should look like this when loaded into Matlab:
