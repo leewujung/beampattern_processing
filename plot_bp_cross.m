@@ -40,8 +40,8 @@ ch_good_loc = ~isnan(data.mic_loc(:,1))';
 notnanidx = ~ismember(1:data.mic_data.num_ch_in_file,union(ch_ex_manual,ch_ex_sig)) & ch_good_loc;
 
 % Azimuth and elevation stuff
-az_idx = data.mic_vh(:)==1 & notnanidx(:);
-el_idx = data.mic_vh(:)==0 & notnanidx(:);
+az_idx = ceil(data.mic_vh(:))==1 & notnanidx(:);
+el_idx = floor(data.mic_vh(:))==0 & notnanidx(:);
 az = mic_to_bat_angle(az_idx,1);  % azimuth
 el = mic_to_bat_angle(el_idx,2);  % elevation
 if strcmp(gui_op.linlog,'rb_lin')  % log/linear display
@@ -88,7 +88,7 @@ if ~isempty(el_x)
     pp = polar(el_plot(:,1),el_plot(:,2),'.-');
     set(pp,'markersize',20);
     hold on
-    text(el_x,el_y,{num2str(mic_el(:))});
+    text(el_x,el_y,num2str(el_plot(:,3)),'color','r');
 else
     polar(0,0,'.-');
 end
