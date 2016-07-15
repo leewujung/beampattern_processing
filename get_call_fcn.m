@@ -47,7 +47,8 @@ for iC = 1:proc_call_num
         sidx_in_long = call_sidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call start idx in extracted portion
         eidx_in_long = call_eidx-data.proc.call_align_se_idx(iC,ch_sel,1)+1;  % call end idx in extracted portion
         try  % **call duration marking error**
-            call_template = call_long(sidx_in_long:eidx_in_long,ch_sel);  % carve out template for call
+            CT = call_long(sidx_in_long:eidx_in_long,ch_sel);  % carve out template for call
+            call_template = CT-mean(CT);
             call_template_len_pt = length(call_template);
         catch
             fprintf('Call duration marking is problematic in Call #%d\n',data.mic_data.call_idx_w_track(iC));
@@ -73,7 +74,7 @@ for iC = 1:proc_call_num
         ch_xcorr_env = nan(size(call_long,1)*2-1,num_ch);
         for iM = 1:num_ch
             if ~isnan(data.mic_loc(iM,1))  % if mic location available
-                [ch_xcorr(:,iM),xcorr_lags] = xcorr(call_long(:,iM),call_template);
+                [ch_xcorr(:,iM),xcorr_lags] = xcorr(call_long(:,iM)-mean(call_long(:,iM)),call_template);
                 ch_xcorr_env(:,iM) = abs(hilbert(ch_xcorr(:,iM)));
             end
         end
