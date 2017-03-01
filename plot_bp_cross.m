@@ -108,7 +108,7 @@ if ~isempty(az_x)
     pp = polar(-az_plot(:,1),az_plot(:,2),'.-');  % flip az +/-
     set(pp,'markersize',20);
     hold on
-    text(az_x,-az_y,num2str(mic_az(:)),'color','r');  % flip az +/-
+    text(az_x,-az_y,num2str(mic_az(az_plot(:,3))),'color','r');  % flip az +/-
 else
     polar(0,0,'.-');
 end
