@@ -14,6 +14,7 @@ function data = bp_proc(data,pname,fname,tnum,chk_indiv_call,track_cut_idx)
 %             detection results can be loaded from different directories
 % 2015 10 28  Enable reading call_start_idx and call_end_idx in the folder
 % 2015 11 12  Plot and check the peak detection for each call
+% 2017 03 01  Fix error in calculating bat2mic
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Manual params
@@ -159,7 +160,8 @@ bat_loc_at_call_rep = repmat(data.proc.bat_loc_at_call(iC,:),size(data.mic_loc,1
 % Find angle from the bat to each mic
 bat_to_mic_vec = bat_loc_at_call_rep-data.mic_loc;
 bat_to_mic_vec = bat_to_mic_vec./repmat(sqrt(diag(bat_to_mic_vec*bat_to_mic_vec')),1,3);
-bat_to_mic_angle = acos(diag(bat_to_mic_vec*data.mic_vec'));
+mic_vec_norm = data.mic_vec./repmat(sqrt(diag(data.mic_vec*data.mic_vec')),1,3);
+bat_to_mic_angle = acos(diag(bat_to_mic_vec*mic_vec_norm'));
 
 % Save data
 data.proc.bat_to_mic_angle(iC,:) = bat_to_mic_angle;
