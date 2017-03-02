@@ -48,7 +48,7 @@ if isempty(bp_compensation)  % **call duration marking error**
     data.proc.call_p2p_SPL_comp_re20uPa(iC) = NaN;
     continue
 end
-[X,Y] = meshgrid(data.mic_bp.theta,data.mic_bp.freq);
+[X,Y] = meshgrid(data.mic_bp.theta/180*pi,data.mic_bp.freq);  % convert from [deg] to [rad]
 for iM=1:length(bat_to_mic_angle)
     [XI,YI] = meshgrid(bat_to_mic_angle(iM),call_freq);
     bp_compensation(:,iM) = interp2(X,Y,data.mic_bp.bp(:,:,iM),XI,YI);  % interpolate mic beampattern
