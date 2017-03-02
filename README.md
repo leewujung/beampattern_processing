@@ -125,7 +125,7 @@ This is a MAT file containing information about the receiving beampattern of eac
   src         1x1                 1563678  struct              
   theta       1x101                   808  double     
 ```
-Here, `bp` stores the receiving beampattern at `nf` frequencies listed in `freq` across `nt` polar angles listed in `theta`, for `nm` mic channels (in the example `nm=34`). Therefore, the dimension of `bp` is `[nfx nt x nm]`. The values in `bp` are normalized to the axis of the mic at `theta=0` in dB scale. `src` contains information about from which files these parameters come from. This variable is not used in the processing. Note that the sequence of the `nm` channels here should be ordered according to the sequence of the mic locations.
+Here, `bp` stores the receiving beampattern at `nf` frequencies listed in `freq` across `nt` angles (degrees) listed in `theta`, for `nm` mic channels (in the example `nm=34`). Therefore, the dimension of `bp` is `[nf x nt x nm]`. The values in `bp` are normalized to the axis of the mic at `theta=0` in dB scale. `src` contains information about from which files these parameters come from. This variable is not used in the processing. Note that the sequence of the `nm` channels here should be ordered according to the sequence of the mic locations.
 
 #### Mic sensitivity (folder: mic_sens) ####
 This is a MAT file containing information about the sensitivity of each of the mics. The content should look like this when loaded into Matlab:
