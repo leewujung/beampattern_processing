@@ -20,7 +20,7 @@ function data = bp_proc(data,pname,fname,tnum,chk_indiv_call,track_cut_idx)
 % Manual params
 data.path.base_dir = pname;
 data.files.match_fname = fname;
-data.param.tempC = (data.param.tempF-32)*9/5;  % temperature [deg C]
+data.param.tempC = (data.param.tempF-32)*5/9;  % temperature [deg C]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
