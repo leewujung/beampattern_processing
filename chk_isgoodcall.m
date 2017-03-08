@@ -2,8 +2,8 @@
 
 clear
 usrn = getenv('username');
-base_path = ['C:\Users\',usrn,'\Dropbox\0_ANALYSIS\bp_processing'];
-bat_proc_path = './proc_output';
+base_path = ['F:\Dropbox\0_ANALYSIS\bp_processing'];
+bat_proc_path = './proc_output_rousettus_new';
 bat_proc_file = dir(fullfile(base_path,bat_proc_path,'rousettus_20150825_*.mat'));
 freq_wanted = 35e3;
 goodcall_angle_range = [-60 60];
