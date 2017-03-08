@@ -34,7 +34,7 @@ proc_call_num = length(data.mic_data.call_idx_w_track);  % number of processed c
 for iC = 1:proc_call_num
 
     % Load params
-    tolerance = data.param.tolernace;  % tolerance for finding calls around peak of max channel
+    tolerance = data.param.tolerance;  % tolerance for finding calls around peak of max channel
     tukeywin_prop = data.param.tukeywin_proportion;  % tukey window taper porportion
     num_ch = data.mic_data.num_ch_in_file;  % number of channels in file
     call_long = squeeze(data.proc.call_align(iC,:,:));

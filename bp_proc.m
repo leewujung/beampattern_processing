@@ -1,4 +1,4 @@
-function data = bp_proc(data,pname,fname,tnum,chk_indiv_call,track_cut_idx,axis_orient,zero_bat2mic_angle,head_aim_prescribed)
+function data = bp_proc(data,pname,fname,tnum,chk_indiv_call,track_cut_idx)
 
 % Beampattern processing main code
 % all functions transplated from beampattern_gui_v6.m
@@ -55,9 +55,9 @@ disp(['Processing ',data.files.mic_data]);
 
 % Load data and info
 disp('Loading all data and related info...');
-data = load_mic_info(data,axis_orient);
+data = load_mic_info(data);
 data = load_mic_bp_sens(data);
-data = load_bat_pos(data,track_cut_idx,axis_orient,head_aim_prescribed);
+data = load_bat_pos(data,track_cut_idx);
 data = load_mic_data(data);
 
 
@@ -67,7 +67,7 @@ data = load_mic_data(data);
 disp('Calculating all angle info...');
 data = time_delay_btwn_bat_mic(data);
 data = mic2bat(data);
-data = bat2mic(data,zero_bat2mic_angle);
+data = bat2mic(data);
 
 % Reserve space for GUI checking
 data.proc.chk_good_call = zeros((length(data.mic_data.call_idx_w_track)),1);  % set all to bad call
@@ -149,12 +149,12 @@ data.proc.source_head_aim(iC) = data.track.marker_indicator(curr_call_loc_idx_on
 end
 
 
-function data = bat2mic(data,zero_bat2mic_angle)
+function data = bat2mic(data)
 % Calculate the angle between the mic axis and the vector from mic to bat
 
 proc_call_num = length(data.mic_data.call_idx_w_track);
 
-if zero_bat2mic_angle
+if data.param.zero_bat2mic_angle
   %only to be used when mic's are aimed at bat
   bat_to_mic_angle = zeros(proc_call_num,size(data.mic_loc,1));
 
@@ -178,10 +178,10 @@ end
 end
 
 
-function data = load_mic_info(data,axis_orient)
+function data = load_mic_info(data)
 A = load(fullfile(data.path.base_dir,data.path.mic_info,data.files.mic_info));
-data.mic_loc = A.mic_loc(:,axis_orient);  % permute to get the x-y-z coordinate right
-data.mic_vec = A.mic_vec(:,axis_orient);
+data.mic_loc = A.mic_loc(:,data.param.axis_orient);  % permute to get the x-y-z coordinate right
+data.mic_vec = A.mic_vec(:,data.param.axis_orient);
 data.mic_vh = A.mic_vh;
 data.mic_gain = A.mic_gain;
 clear A
@@ -192,7 +192,7 @@ data.mic_sens = load(fullfile(data.path.base_dir,data.path.mic_sens,data.files.m
 data.mic_bp = load(fullfile(data.path.base_dir,data.path.mic_bp,data.files.mic_bp));
 
 
-function data = load_bat_pos(data,cut_idx,axis_orient,head_aim_prescribed)
+function data = load_bat_pos(data,cut_idx)
 bat = load(fullfile(data.path.base_dir,data.path.bat_pos,data.files.bat_pos));
 sm_len = data.track.smooth_len;  % track smoothing length
 diff_len = round(data.track.head_aim_est_time_diff*data.track.fs/1e3);  % pt difference for estimating head aim from track
@@ -208,10 +208,10 @@ if length(bat.bat_pos)==1  % 1 marker on head/bat position
 
     % Find segments and smoothing
     seg_idx = find_seg(track,sm_len);  % continuous segment
-    track_sm = sm_track(track(:,axis_orient),sm_len,seg_idx);  % smoothing
+    track_sm = sm_track(track(:,data.param.axis_orient),sm_len,seg_idx);  % smoothing
     
     % Get head aim and head normal
-    if head_aim_prescribed
+    if data.param.head_aim_prescribed
       head_aim = repmat(data.track.head_aim_prescribe,size(track_sm,1),1); 
       head_n = repmat(data.track.head_n_prescribe,size(track_sm,1),1); 
     else
@@ -235,7 +235,7 @@ if length(bat.bat_pos)==1  % 1 marker on head/bat position
     marker_indic = zeros(size(track_int,1),1);  % 0-head aim derived from track
     
     % Save raw and smoothed marker positions
-    data.track.marked_pos = pos(:,axis_orient);
+    data.track.marked_pos = pos(:,data.param.axis_orient);
     
     
 elseif length(bat.bat_pos)==3  % 3 markers on the head
@@ -248,7 +248,7 @@ elseif length(bat.bat_pos)==3  % 3 markers on the head
     pos = pos(cut_idx,:,:);
     track = nanmean(pos,3);  % raw bat track: mean of three points
     % track_all3 = mean(pos,3);  % raw bat track with all 3 points presents
-    % track = track(:,axis_orient);  % change axis sequence to corresponding the ground reference
+    % track = track(:,data.param.axis_orient);  % change axis sequence to corresponding the ground reference
     track_t = -fliplr(0:size(track,1)-1)/data.track.fs;  % Time stamp of the track [sec]
     
     % Find segments
@@ -259,10 +259,10 @@ elseif length(bat.bat_pos)==3  % 3 markers on the head
     seg_idx_right = find_seg(pos(:,:,3),sm_len);
     
     % Smooth track and marker pos
-    track_sm = sm_track(track(:,axis_orient),sm_len,seg_idx);
-    tip = sm_track(pos(:,axis_orient,1),sm_len,seg_idx_tip);
-    left = sm_track(pos(:,axis_orient,2),sm_len,seg_idx_left);
-    right = sm_track(pos(:,axis_orient,3),sm_len,seg_idx_right);
+    track_sm = sm_track(track(:,data.param.axis_orient),sm_len,seg_idx);
+    tip = sm_track(pos(:,data.param.axis_orient,1),sm_len,seg_idx_tip);
+    left = sm_track(pos(:,data.param.axis_orient,2),sm_len,seg_idx_left);
+    right = sm_track(pos(:,data.param.axis_orient,3),sm_len,seg_idx_right);
     
     head_aim = norm_mtx_vec(tip-(left+right)/2);
     head_n = norm_mtx_vec(cross(tip-left,tip-right));
@@ -296,7 +296,7 @@ elseif length(bat.bat_pos)==3  % 3 markers on the head
     head_n_int(nanidx,:) = repmat(norm_vec,sum(nanidx),1);
     
     % Save raw and smoothed marker positions
-    data.track.marked_pos = pos(:,axis_orient,:);
+    data.track.marked_pos = pos(:,data.param.axis_orient,:);
     data.track.tip_smooth = tip;
     data.track.left_smooth = left;
     data.track.right_smooth = right;
