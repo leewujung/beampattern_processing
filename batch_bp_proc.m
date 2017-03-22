@@ -1,4 +1,5 @@
 % 2015 10 23  Process beampattern data and save to folder
+clear
 
 pname = 'E:\Desktop\bp_proc_main_folder';
 fname = 'SPECIES_DATE_file_match.xlsx';
@@ -18,7 +19,7 @@ for tnum = trial_to_proc
     data.track.smooth_len = 10;  % number of points used to smooth tracks
     data.track.head_aim_est_time_diff = 50; % [ms] time span between points used for estimating head aim from bat position
     
-    data.param.head_aim_prescribed=0;%head aim is prescribed (suing value for head_aim_prescribe and head_n_prescribe)
+    data.param.head_aim_prescribed=0;%head aim is prescribed (using value for head_aim_prescribe and head_n_prescribe)
     
     data.track.head_aim_prescribe = [0,-1,0];  % precribed head aim vector (only used in 1-marker case, ignored in 3-marker case)
     data.track.head_n_prescribe = [0 0 1];% precribed head normal vector (only used in 1-marker case, ignored in 3-marker case)
@@ -33,7 +34,7 @@ for tnum = trial_to_proc
     data.param.tukeywin_proportion = 0.25;  % proportional of tukeywin for call tapering
     data.param.dura_flag = 1;   % 1-use duration marked in the mic detect file (FM bats)
                                 % 0-use default detection stuff (Rousettus)
-    data.param.axis_orient= [3 1 2]; %axis orientation ([3 1 2] for small space beampatter 2015 data)
+    data.param.axis_orient= [1 2 3]; %axis orientation ([3 1 2] for small space beampatter 2015 data)
     data.param.zero_bat2mic_angle=0;%mics are pointed at bat at all times
                                 
     data.param.click_th = 0.1;  % threshold for extracting click ranges, only used when dura_flag=1

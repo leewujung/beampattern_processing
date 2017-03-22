@@ -264,8 +264,13 @@ elseif length(bat.bat_pos)==3  % 3 markers on the head
     left = sm_track(pos(:,data.param.axis_orient,2),sm_len,seg_idx_left);
     right = sm_track(pos(:,data.param.axis_orient,3),sm_len,seg_idx_right);
     
-    head_aim = norm_mtx_vec(tip-(left+right)/2);
-    head_n = norm_mtx_vec(cross(tip-left,tip-right));
+    if data.param.head_aim_prescribed
+      head_aim = repmat(data.track.head_aim_prescribe,size(track_sm,1),1); 
+      head_n = repmat(data.track.head_n_prescribe,size(track_sm,1),1); 
+    else
+      head_aim = norm_mtx_vec(tip-(left+right)/2);
+      head_n = norm_mtx_vec(cross(tip-left,tip-right));
+    end
     
     % Interpolate to finer resolution for aligning calls
     track_int_t_interval = 1e-3;  % interpolate to 1ms interval

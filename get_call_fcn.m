@@ -50,6 +50,7 @@ for iC = 1:proc_call_num
             CT = call_long(sidx_in_long:eidx_in_long,ch_sel);  % carve out template for call
             call_template = CT-mean(CT);
             call_template_len_pt = length(call_template);
+            CT(1); %will fail if empty and push it to the catch statement
         catch
             fprintf('Call duration marking is problematic in Call #%d\n',data.mic_data.call_idx_w_track(iC));
             % Fake save data ====================================
@@ -124,7 +125,6 @@ for iC = 1:proc_call_num
             shift_gap = max(max(call_long));  % vertical shift gaps for display all channels together
 %             shift_gap = max(max(ch_xcorr_env));  % vertical shift gaps for display all channels together
             shift_gap = max([floor(shift_gap/0.1)*0.1 0.1]);
-            shift_gap = shift_gap;
             tstamp = (0:size(call_long,1)-1)/data.mic_data.fs*1e3;
             
             % plot
@@ -134,7 +134,7 @@ for iC = 1:proc_call_num
             hold on
             notnanidx = ~isnan(call_short_se_idx);
             for iM=1:num_ch
-                if ~isnan(call_short_se_idx(iM,1));
+                if ~isnan(call_short_se_idx(iM,1))
                     want_idx = call_short_se_idx(iM,1):call_short_se_idx(iM,2);
                     plot(tstamp(want_idx),call_long(want_idx,iM)+shift_gap*iM,'color',corder(2,:));
                 end
