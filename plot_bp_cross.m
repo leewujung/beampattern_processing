@@ -1,4 +1,4 @@
-function plot_bp_cross(handles)
+function plot_bp_cross(handles,freq_wanted)
 % Plot interpolated beampattern in polar plot for cross configuration
 % Interpolation superimposed on actual measurements
 
@@ -15,7 +15,9 @@ if isempty(data.mic_vh)
 end
 
 mic_to_bat_angle = squeeze(data.proc.mic_to_bat_angle_x(gui_op.current_call_idx,:,:));
-freq_wanted = str2num(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+if nargin == 1 || isempty(freq_wanted) %allowing optional passing in of freq
+  freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+end
 
 call_dB = nan(1,data.mic_data.num_ch_in_file);
 for iM=1:data.mic_data.num_ch_in_file

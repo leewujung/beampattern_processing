@@ -1,11 +1,13 @@
-function plot_bp_2d(handles)
+function plot_bp_2d(handles,freq_wanted)
 % Plot interpolated beampattern on azimuth-elevation plane
 
 % Load data
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
 mic_to_bat_angle = squeeze(data.proc.mic_to_bat_angle(gui_op.current_call_idx,:,:));
-freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+if nargin == 1 || isempty(freq_wanted) %allowing optional passing in of freq
+  freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+end
 call_dB = nan(1,data.mic_data.num_ch_in_file);
 for iM=1:data.mic_data.num_ch_in_file
     freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};

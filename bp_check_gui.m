@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 23-Feb-2016 14:46:52
+% Last Modified by GUIDE v2.5 30-Mar-2017 15:37:41
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -791,4 +791,88 @@ if data.proc.source_head_aim(gui_op.current_call_idx)==1
     set(handles.checkbox_head_aim_mkr,'Value',1);
 else
     set(handles.checkbox_head_aim_mkr,'Value',0);
+end
+
+
+% --- Executes on button press in bp_freq_anim.
+function bp_freq_anim_Callback(hObject, eventdata, handles)
+% hObject    handle to bp_freq_anim (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+data = getappdata(0,'data');
+gui_op = getappdata(0,'gui_op');
+
+start_freq = str2double(get(handles.bp_freq_anim_start,'String'))*1e3;
+end_freq = str2double(get(handles.bp_freq_anim_end,'String'))*1e3;
+
+current_call = gui_op.current_call_idx;
+freq_vec = data.proc.call_freq_vec{current_call,1};
+
+freq_idx = find(freq_vec>=start_freq,1):find(freq_vec<=end_freq,1,'last');
+for ff=1:length(freq_idx)
+  freq_wanted = freq_vec(freq_idx(ff));
+  if strcmp(gui_op.mic_config,'rb_cross')
+    plot_bp_cross(handles,freq_wanted);  % display beampattern
+  else
+    plot_bp_2d(handles,freq_wanted);  % display beampattern
+  end
+  title(['Freq: ' num2str(round(freq_wanted/1e3))])
+  drawnow;
+end
+
+%returning to original freq display:
+freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;
+if strcmp(gui_op.mic_config,'rb_cross')
+  plot_bp_cross(handles,freq_wanted);  % display beampattern
+else
+  plot_bp_2d(handles,freq_wanted);  % display beampattern
+end
+drawnow;
+
+% fig_h = figure(3);
+% for ff=1:length(freq_idx)
+%   plot those data in a new window with (hopefully) minimal delay
+% end
+
+
+function bp_freq_anim_end_Callback(hObject, eventdata, handles)
+% hObject    handle to bp_freq_anim_end (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of bp_freq_anim_end as text
+%        str2double(get(hObject,'String')) returns contents of bp_freq_anim_end as a double
+
+
+function bp_freq_anim_start_Callback(hObject, eventdata, handles)
+% hObject    handle to bp_freq_anim_start (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of bp_freq_anim_start as text
+%        str2double(get(hObject,'String')) returns contents of bp_freq_anim_start as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function bp_freq_anim_start_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to bp_freq_anim_start (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+% --- Executes during object creation, after setting all properties.
+function bp_freq_anim_end_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to bp_freq_anim_end (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
 end
