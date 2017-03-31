@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 30-Mar-2017 15:37:41
+% Last Modified by GUIDE v2.5 31-Mar-2017 14:15:42
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -196,11 +196,9 @@ update_edit_call_gui;  % update edit_call_section GUI if exist
 
 plot_bat_mic_vector;   % plot bat2mic vector
 plot_time_series_in_gui(handles);  % display time series of first call
-if strcmp(gui_op.mic_config,'rb_cross');
-    plot_bp_cross(handles);  % display beampattern
-else
-    plot_bp_2d(handles);  % display beampattern
-end
+cla(handles.axes_bp,'reset');
+cla(handles.axes_bp_contour,'reset');
+update_bp_plots(handles,gui_op);
 disp('Loaded ')
 
 
@@ -240,10 +238,16 @@ update_edit_call_gui;  % update edit_call_section GUI if exist
 % Update plot
 plot_bat_mic_vector;   % plot bat2mic vector
 plot_time_series_in_gui(handles);  % display time series of first call
-if strcmp(gui_op.mic_config,'rb_cross');
-    plot_bp_cross(handles);  % display beampattern
+update_bp_plots(handles,gui_op);
+
+
+function update_bp_plots(handles,gui_op)
+if strcmp(gui_op.mic_config,'rb_cross')
+  plot_bp_cross(handles);  % display beampattern
+elseif strcmp(gui_op.mic_config,'rb_multi_freq')
+  plot_bp_multi_freq(handles);
 else
-    plot_bp_2d(handles);  % display beampattern
+  plot_bp_2d(handles);  % display beampattern
 end
 
 
@@ -272,11 +276,7 @@ update_edit_call_gui;  % update edit_call_section GUI if exist
 % Update plot
 plot_bat_mic_vector;   % plot bat2mic vector
 plot_time_series_in_gui(handles);  % display time series of first call
-if strcmp(gui_op.mic_config,'rb_cross');
-    plot_bp_cross(handles);  % display beampattern
-else
-    plot_bp_2d(handles);  % display beampattern
-end
+update_bp_plots(handles,gui_op);
 
 
 function update_edit_call_gui()
@@ -312,11 +312,7 @@ move_call_circle_on_track();  % update current call location on track
 % Update plot
 plot_bat_mic_vector;   % plot bat2mic vector
 plot_time_series_in_gui(handles);  % display time series of first call
-if strcmp(gui_op.mic_config,'rb_cross');
-    plot_bp_cross(handles);  % display beampattern
-else
-    plot_bp_2d(handles);  % display beampattern
-end
+update_bp_plots(handles,gui_op);
 
 
 
@@ -370,11 +366,7 @@ gui_op = getappdata(0,'gui_op');
 data = getappdata(0,'data');
 update_caxis(handles);     % update color axis for bp display
 if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
-    if strcmp(gui_op.mic_config,'rb_cross');
-        plot_bp_cross(handles);  % display beampattern
-    else
-        plot_bp_2d(handles);  % display beampattern
-    end
+  update_bp_plots(handles,gui_op);
 end
 % Hint: get(hObject,'Value') returns toggle state of checkbox_norm
 
@@ -469,11 +461,7 @@ gui_op = getappdata(0,'gui_op');
 data = getappdata(0,'data');
 update_caxis(handles);     % update color axis for bp display
 if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
-    if strcmp(gui_op.mic_config,'rb_cross');
-        plot_bp_cross(handles);  % display beampattern
-    else
-        plot_bp_2d(handles);  % display beampattern
-    end
+  update_bp_plots(handles,gui_op);
 end
 if isappdata(0,'track_gui_handles')
   track_gui_handles = getappdata(0,'track_gui_handles'); 
@@ -534,11 +522,7 @@ data.proc.ch_ex{gui_op.current_call_idx} = sscanf(s,'%d,');
 setappdata(0,'data',data);
 
 gui_op = getappdata(0,'gui_op');
-if strcmp(gui_op.mic_config,'rb_cross');
-    plot_bp_cross(handles);  % display beampattern
-else
-    plot_bp_2d(handles);  % display beampattern
-end
+update_bp_plots(handles,gui_op);
 if isappdata(0,'track_gui_handles')
   track_gui_handles = getappdata(0,'track_gui_handles'); 
   if get(track_gui_handles.checkbox_top_view_bp,'value')
@@ -574,11 +558,7 @@ setappdata(0,'gui_op',gui_op);
 
 data = getappdata(0,'data');
 if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')
-    if strcmp(gui_op.mic_config,'rb_cross');
-        plot_bp_cross(handles);  % display beampattern
-    else
-        plot_bp_2d(handles);  % display beampattern
-    end
+  update_bp_plots(handles,gui_op);
 end
 
 
@@ -626,11 +606,7 @@ setappdata(0,'gui_op',gui_op);
 
 data = getappdata(0,'data');
 if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
-    if strcmp(gui_op.mic_config,'rb_cross');
-        plot_bp_cross(handles);  % display beampattern
-    else
-        plot_bp_2d(handles);  % display beampattern
-    end
+  update_bp_plots(handles,gui_op);
 end
 if isappdata(0,'track_gui_handles')
   track_gui_handles = getappdata(0,'track_gui_handles'); 
@@ -651,11 +627,7 @@ setappdata(0,'gui_op',gui_op);
 
 data = getappdata(0,'data');
 if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
-    if strcmp(gui_op.mic_config,'rb_cross');
-        plot_bp_cross(handles);  % display beampattern
-    else
-        plot_bp_2d(handles);  % display beampattern
-    end
+  update_bp_plots(handles,gui_op);
 end
 
 
@@ -671,11 +643,7 @@ else
     gui_op.caxis_norm_current(1) = str2double(get(hObject,'String'));
 end
 setappdata(0,'gui_op',gui_op);
-if strcmp(gui_op.mic_config,'rb_cross');
-    plot_bp_cross(handles);  % display beampattern
-else
-    plot_bp_2d(handles);  % display beampattern
-end
+update_bp_plots(handles,gui_op);
 % Hints: get(hObject,'String') returns contents of edit_cmin as text
 %        str2double(get(hObject,'String')) returns contents of edit_cmin as a double
 
@@ -704,11 +672,7 @@ else
     gui_op.caxis_norm_current(2) = str2double(get(hObject,'String'));
 end
 setappdata(0,'gui_op',gui_op);
-if strcmp(gui_op.mic_config,'rb_cross');
-    plot_bp_cross(handles);  % display beampattern
-else
-    plot_bp_2d(handles);  % display beampattern
-end
+update_bp_plots(handles,gui_op);
 % Hints: get(hObject,'String') returns contents of edit_cmax as text
 %        str2double(get(hObject,'String')) returns contents of edit_cmax as a double
 
@@ -799,8 +763,15 @@ function bp_freq_anim_Callback(hObject, eventdata, handles)
 % hObject    handle to bp_freq_anim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
+
+%check for whether you are in multi_freq
+if strcmp(gui_op.mic_config,'rb_multi_freq')
+  disp('Can''t animate in multi freq mode.')
+  return
+end
 
 start_freq = str2double(get(handles.bp_freq_anim_start,'String'))*1e3;
 end_freq = str2double(get(handles.bp_freq_anim_end,'String'))*1e3;
@@ -808,7 +779,12 @@ end_freq = str2double(get(handles.bp_freq_anim_end,'String'))*1e3;
 current_call = gui_op.current_call_idx;
 freq_vec = data.proc.call_freq_vec{current_call,1};
 
-freq_idx = find(freq_vec>=start_freq,1):find(freq_vec<=end_freq,1,'last');
+def_interv = diff(freq_vec(1:2));
+new_interv = str2double(get(handles.anim_khz_size,'String'))*1e3;
+skip_idx = round(new_interv/def_interv);
+freq_vec = freq_vec(1:skip_idx:end);
+
+freq_idx = find(freq_vec>=start_freq+new_interv,1):find(freq_vec>=end_freq,1);
 for ff=1:length(freq_idx)
   freq_wanted = freq_vec(freq_idx(ff));
   if strcmp(gui_op.mic_config,'rb_cross')
@@ -827,7 +803,6 @@ if strcmp(gui_op.mic_config,'rb_cross')
 else
   plot_bp_2d(handles,freq_wanted);  % display beampattern
 end
-drawnow;
 
 % fig_h = figure(3);
 % for ff=1:length(freq_idx)
@@ -875,4 +850,41 @@ function bp_freq_anim_end_CreateFcn(hObject, eventdata, handles)
 %       See ISPC and COMPUTER.
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
+end
+
+function anim_khz_size_Callback(hObject, eventdata, handles)
+% hObject    handle to anim_khz_size (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of anim_khz_size as text
+%        str2double(get(hObject,'String')) returns contents of anim_khz_size as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function anim_khz_size_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to anim_khz_size (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in show_bp_plot.
+function show_bp_plot_Callback(hObject, eventdata, handles)
+% hObject    handle to show_bp_plot (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of show_bp_plot
+gui_op = getappdata(0,'gui_op');
+if get(hObject,'Value') && ~strcmp(gui_op.mic_config,'rb_cross')
+  plot_bp_2d(handles);
+else
+  axes(handles.axes_bp);
+  cla(handles.axes_bp,'reset');
 end
