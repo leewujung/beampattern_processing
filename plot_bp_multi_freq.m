@@ -14,6 +14,9 @@ freq_skip=5e3;
 freqs=start_freq:freq_skip:end_freq;
 cols=parula(length(freqs));
 
+% clear the plot on the right
+cla(handles.axes_bp,'reset');
+
 axes(handles.axes_bp_contour);
 cla(handles.axes_bp_contour,'reset');
 axesm eckert4;
