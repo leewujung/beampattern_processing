@@ -556,9 +556,15 @@ gui_op = getappdata(0,'gui_op');
 gui_op.mic_config = get(eventdata.NewValue, 'Tag');
 setappdata(0,'gui_op',gui_op);
 
+cla(handles.axes_bp_contour,'reset');
+cla(handles.axes_bp,'reset');
+
 data = getappdata(0,'data');
 if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')
   update_bp_plots(handles,gui_op);
+end
+if ~get(handles.show_bp_plot,'Value') && ~strcmp(gui_op.mic_config,'rb_cross')
+  set(handles.axes_bp,'visible','off')
 end
 
 
@@ -887,4 +893,5 @@ if get(hObject,'Value') && ~strcmp(gui_op.mic_config,'rb_cross')
 else
   axes(handles.axes_bp);
   cla(handles.axes_bp,'reset');
+  set(handles.axes_bp,'visible','off');
 end
