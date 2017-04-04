@@ -196,8 +196,6 @@ update_edit_call_gui;  % update edit_call_section GUI if exist
 
 plot_bat_mic_vector;   % plot bat2mic vector
 plot_time_series_in_gui(handles);  % display time series of first call
-cla(handles.axes_bp,'reset');
-cla(handles.axes_bp_contour,'reset');
 update_bp_plots(handles,gui_op);
 disp('Loaded ')
 
@@ -888,10 +886,12 @@ function show_bp_plot_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of show_bp_plot
 gui_op = getappdata(0,'gui_op');
-if get(hObject,'Value') && ~strcmp(gui_op.mic_config,'rb_cross')
-  plot_bp_2d(handles);
-else
-  axes(handles.axes_bp);
-  cla(handles.axes_bp,'reset');
-  set(handles.axes_bp,'visible','off');
+if strcmp(gui_op.mic_config,'rb_2d')
+  if get(hObject,'Value')
+    plot_bp_2d(handles);
+  else
+    axes(handles.axes_bp);
+    cla(handles.axes_bp,'reset');
+    set(handles.axes_bp,'visible','off');
+  end
 end

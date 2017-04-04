@@ -23,7 +23,8 @@ call_dB = nan(1,data.mic_data.num_ch_in_file);
 for iM=1:data.mic_data.num_ch_in_file
     freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
     [~,fidx] = min(abs(freq-freq_wanted));
-    call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+    call_dB(iM) = ...
+      data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
 end
 
 
@@ -39,7 +40,8 @@ ch_ex_sig = find(isnan(call_dB));  % low quality channel from call extraction fu
 ch_good_loc = ~isnan(data.mic_loc(:,1))';
 
 % Channels to be considered
-notnanidx = ~ismember(1:data.mic_data.num_ch_in_file,union(ch_ex_manual,ch_ex_sig)) & ch_good_loc;
+notnanidx = ~ismember(1:data.mic_data.num_ch_in_file,union(ch_ex_manual,ch_ex_sig))...
+  & ch_good_loc;
 
 % Azimuth and elevation stuff
 az_idx = ceil(data.mic_vh(:))==1 & notnanidx(:);
@@ -89,7 +91,6 @@ cla(handles.axes_bp_contour,'reset');
 if ~isempty(el_x)
     pp = polar(el_plot(:,1),el_plot(:,2),'.-');
     set(pp,'markersize',20);
-    hold on
     text(el_x,el_y,num2str(el_plot(:,3)),'color','r');
 else
     polar(0,0,'.-');
@@ -109,7 +110,6 @@ cla(handles.axes_bp,'reset');
 if ~isempty(az_x)
     pp = polar(az_plot(:,1),az_plot(:,2),'.-');  % flip az +/-
     set(pp,'markersize',20);
-    hold on
     text(az_x,az_y,num2str(mic_az(sort_index)'),'color','r');  % flip az +/-
 else
     polar(0,0,'.-');
