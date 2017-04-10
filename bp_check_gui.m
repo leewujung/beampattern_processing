@@ -134,6 +134,13 @@ end
 gui_op.current_call_idx = 1;
 data.path.proc_data = pname;
 data.files.proc_data = fname;
+
+checked_fn = [pname fname(1:end-4) '_checked.mat'];
+if exist(checked_fn,'file') %if there's a checked file we load that stuff over top
+  check_proc = load(checked_fn);
+  data.proc.chk_good_call = check_proc.proc.chk_good_call;
+  data.proc.ch_ex = check_proc.proc.ch_ex;
+end
 disp('Processed results loaded');
 
 % Load mic data
