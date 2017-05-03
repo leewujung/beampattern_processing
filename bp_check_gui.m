@@ -22,7 +22,7 @@ function varargout = bp_check_gui(varargin)
 
 % Edit the above text to modify the response to help bp_check_gui
 
-% Last Modified by GUIDE v2.5 31-Mar-2017 14:15:42
+% Last Modified by GUIDE v2.5 03-May-2017 16:04:57
 
 % 2015 10 13  -- feed bat head aim from data
 %             -- use new format of mic sensitivity and beampattern
@@ -247,6 +247,48 @@ update_bp_plots(handles,gui_op);
 
 
 function update_bp_plots(handles,gui_op)
+
+if get(handles.peak_freq_checkbox,'Value')
+  data = getappdata(0,'data');
+  current_call_idx = gui_op.current_call_idx;
+  
+  if isfield(data.mic_data.call(current_call_idx),'fmax') &&...
+      isfinite(data.mic_data.call(current_call_idx).fmax)
+    fmax = data.mic_data.call(current_call_idx).fmax;
+  else
+    high_freq=95;
+    low_freq=15;
+
+    fs=data.mic_data.fs;
+    ch=data.mic_data.call(current_call_idx).channel_marked;
+
+    sig=data.mic_data.sig(:,ch);
+
+    [b,a]=butter(4,low_freq*1e3/(fs/2),'high');
+    sig_filt = filtfilt(b,a,sig);
+    
+    call_start_idx = data.mic_data.call(current_call_idx).call_start_idx;
+    call_end_idx = data.mic_data.call(current_call_idx).call_end_idx;
+
+    voc = sig_filt(call_start_idx:call_end_idx);
+    N=length(voc);
+
+    %     X=abs(fft(voc));
+    %     XX=(1/(fs*N)) * X(1:round(length(X)/2)).^2;
+    %     XX(2:end-1)=2*XX(2:end-1);
+    %     FS=linspace(0,fs/2/1e3,round(length(X)/2));
+    [XX,FS]=periodogram(voc,rectwin(N),N,fs);
+    FS=FS/1e3;
+
+    %getting the peak frequency (this will basically be our CF freq)
+    [~,imax]=max(XX(FS>low_freq & FS < high_freq));
+    imax_real=imax + find(FS>low_freq,1) - 1;
+    fmax = FS(imax_real);
+  end
+  
+  set(handles.edit_bp_freq,'String',num2str(round(fmax)));
+end
+
 if strcmp(gui_op.mic_config,'rb_cross')
   plot_bp_cross(handles);  % display beampattern
 elseif strcmp(gui_op.mic_config,'rb_multi_freq')
@@ -902,3 +944,14 @@ if strcmp(gui_op.mic_config,'rb_2d')
     set(handles.axes_bp,'visible','off');
   end
 end
+
+
+% --- Executes on button press in peak_freq_checkbox.
+function peak_freq_checkbox_Callback(hObject, eventdata, handles)
+% hObject    handle to peak_freq_checkbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of peak_freq_checkbox
+gui_op = getappdata(0,'gui_op');
+update_bp_plots(handles,gui_op);
