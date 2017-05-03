@@ -290,7 +290,7 @@ elseif length(bat.bat_pos)==3  % 3 markers on the head
     head_aim_fake_int = int_track(track_t(1:end-sm_len+1),head_aim_fake,track_int_t);
     
     % Fake head normal from mics on the floor
-    A = data.mic_loc(data.param.mic_floor_idx,:);
+    A = data.mic_loc(data.param.mic_floor_idx,:); %note that these points should be in counterclockwise order
     A0 = bsxfun(@minus,A,mean(A,1)); % Subtract "mean" point
     [~,~,V] = svd(A0,0);
     norm_vec = norm_mtx_vec(V(:,3)');
