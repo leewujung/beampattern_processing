@@ -45,6 +45,10 @@ for tnum = trial_to_proc
     data.param.click_th = 0.1;              % threshold for extracting click ranges
     data.param.click_bpf = bpf30;           % bandpass filter for use in click range estimation
     
+    
+    data.param.PSD_type='pwelch'; %power spectral density calculation
+%     data.param.PSD_type='FFT';
+    
     data.param.mic_floor_idx = [4,5,7,17,24,26,27];  % index of mics on floor, used to estimate head normal vector, should be in counterclockwise order according to the direction "up"
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     

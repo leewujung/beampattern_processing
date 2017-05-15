@@ -252,6 +252,7 @@ if get(handles.peak_freq_checkbox,'Value')
   data = getappdata(0,'data');
   current_call_idx = gui_op.current_call_idx;
   
+  %this is done on the non-compensated voc data:
   if isfield(data.mic_data.call(current_call_idx),'fmax') &&...
       isfinite(data.mic_data.call(current_call_idx).fmax)
     fmax = data.mic_data.call(current_call_idx).fmax;
@@ -280,7 +281,7 @@ if get(handles.peak_freq_checkbox,'Value')
     [XX,FS]=periodogram(voc,rectwin(N),N,fs);
     FS=FS/1e3;
 
-    %getting the peak frequency (this will basically be our CF freq)
+    %getting the peak frequency
     [~,imax]=max(XX(FS>low_freq & FS < high_freq));
     imax_real=imax + find(FS>low_freq,1) - 1;
     fmax = FS(imax_real);

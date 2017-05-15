@@ -45,7 +45,7 @@ if isempty(bp_compensation)  % **call duration marking error**
     data.proc.call_psd_dB_comp_withbp(iC,:) = cell(1,num_ch);
     data.proc.call_psd_dB_comp_re20uPa_nobp(iC,:) = cell(1,num_ch);
     data.proc.call_psd_dB_comp_re20uPa_withbp(iC,:) = cell(1,num_ch);
-    data.proc.call_p2p_SPL_comp_re20uPa(iC) = NaN;
+    data.proc.call_p2p_SPL_comp_re20uPa(iC,:) = NaN(1,num_ch);
     continue
 end
 [X,Y] = meshgrid(data.mic_bp.theta/180*pi,data.mic_bp.freq);  % convert from [deg] to [rad]
@@ -62,12 +62,20 @@ call_psd_dB_comp_re20uPa_nobp = call_psd_dB_comp_nobp + 20*log10(1/20e-6) - gain
 call_psd_dB_comp_re20uPa_withbp = call_psd_dB_comp_withbp + 20*log10(1/20e-6) - gain_dB_fac;
 
 % Call SPL using p2p voltage
-[call_max_p2p,max_p2p_ch_idx] = max(max(cell2mat(data.proc.call_align_short(iC,:)'),[],2));
-TL_dB_mean = mean(TL_dB(:,max_p2p_ch_idx));
-mic_sens_dB_mean = mean(mic_sens_dB(:,max_p2p_ch_idx));
-call_p2p_max_ch_dB = 20*log10(call_max_p2p);
-call_p2p_SPL_comp_re20uPa = call_p2p_max_ch_dB + TL_dB_mean - mic_sens_dB_mean +...
-                                   20*log10(1/20e-6) - data.mic_gain(max_p2p_ch_idx);
+ch_data = cell2mat(data.proc.call_align_short(iC,:)');
+ch_p2p = max(ch_data,[],2) + ...
+  abs(min(cell2mat(data.proc.call_align_short(iC,:)'),[],2));
+call_p2p_ch_dB = 20*log10(ch_p2p');
+
+%using pwelch to calc. the max freq in the data
+A=pwelch(ch_data',128,120,call_freq,data.mic_data.fs);
+[~,max_freq]=max(A); %where the peak should be...
+max_freq_idx = sub2ind(size(A), max_freq, 1:size(A,2));
+
+TL_dB_ch = TL_dB(max_freq_idx);
+mic_sens_dB_mean_ch = mic_sens_dB(max_freq_idx);
+call_p2p_SPL_comp_re20uPa = call_p2p_ch_dB + TL_dB_ch - mic_sens_dB_mean_ch +...
+  20*log10(1/20e-6) - data.mic_gain';
 
 % Save data
 call_len = size(call_psd_raw_dB,2);
@@ -83,6 +91,6 @@ data.proc.call_psd_dB_comp_nobp(iC,:) = num2cell(call_psd_dB_comp_nobp',2);
 data.proc.call_psd_dB_comp_withbp(iC,:) = num2cell(call_psd_dB_comp_withbp',2);
 data.proc.call_psd_dB_comp_re20uPa_nobp(iC,:) = num2cell(call_psd_dB_comp_re20uPa_nobp',2);
 data.proc.call_psd_dB_comp_re20uPa_withbp(iC,:) = num2cell(call_psd_dB_comp_re20uPa_withbp',2);
-data.proc.call_p2p_SPL_comp_re20uPa(iC) = call_p2p_SPL_comp_re20uPa;
+data.proc.call_p2p_SPL_comp_re20uPa(iC,:) = call_p2p_SPL_comp_re20uPa;
 
 end
