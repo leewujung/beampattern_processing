@@ -48,6 +48,8 @@ for tnum = trial_to_proc
     
     data.param.PSD_type='pwelch'; %power spectral density calculation
 %     data.param.PSD_type='FFT';
+
+    data.param.RMS_freq_vec = (30:5:85).*1e3; %freqs at which to calculate dB RMS (done @ one third octave bandwidth)
     
     data.param.mic_floor_idx = [4,5,7,17,24,26,27];  % index of mics on floor, used to estimate head normal vector, should be in counterclockwise order according to the direction "up"
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
