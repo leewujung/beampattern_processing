@@ -332,7 +332,7 @@ for iC = 1:proc_call_num
   data.proc.call_psd_raw_dB(iC,:) = num2cell(call_psd_dB',2);   % spectrum of extracted calls, dB scale
   data.proc.call_rms(iC,:) = num2cell(call_rms',2);
   data.proc.call_rms_dB(iC,:) = num2cell(call_rms_dB',2);
-  data.proc.call_rms_fcenter(iC,:) = num2cell(repmat(num2cell(fcenter',2),1,size(call_short,2))',2); %freq vector for RMS
+  data.proc.call_rms_fcenter(iC,:) = num2cell(repmat(fcenter',1,size(call_short,2))',2); %freq vector for RMS
 end
 
 if plot_opt

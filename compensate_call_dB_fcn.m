@@ -12,7 +12,7 @@ mic_to_bat_dist = data.proc.mic_to_bat_dist(iC,:);     % distance between bat an
 bat_to_mic_angle = data.proc.bat_to_mic_angle(iC,:);   % angle to compensate for mic beampattern
 % call_psd_raw_dB = data.proc.call_psd_raw_dB{iC};  % call spectrum in dB scale
 call_psd_raw_dB = cell2mat(data.proc.call_psd_raw_dB(iC,:)')';  % call spectrum in dB scale
-call_freq = cell2mat(data.proc.call_freq_vec(iC,1));  % frequency vector of the call spectrum
+call_freq = data.proc.call_freq_vec{iC,1};  % frequency vector of the call spectrum
 num_ch = data.mic_data.num_ch_in_file;  % number of channels in file
 d0 = 0.1;  % [m] reference distance from bat
 
@@ -78,7 +78,7 @@ call_p2p_SPL_comp_re20uPa = call_p2p_ch_dB + TL_dB_ch - mic_sens_dB_mean_ch +...
   20*log10(1/20e-6) - data.mic_gain';
 
 % call SPL using RMS
-freqs_RMS=cell2mat(data.proc.call_rms_fcenter{iC});
+freqs_RMS=data.proc.call_rms_fcenter{iC,1};
 TL_dB_RMS_freq = interp1(call_freq,TL_dB,freqs_RMS);
 mic_sens_dB_RMS_freq = interp1(call_freq,mic_sens_dB,freqs_RMS);
 
@@ -86,7 +86,7 @@ call_rms_dB = cell2mat(data.proc.call_rms_dB(iC,:)')';
 call_RMS_SPL_comp_re20uPa=nan(length(freqs_RMS),size(data.proc.call_rms_fcenter,2));
 for iF = 1:length(freqs_RMS)
   call_RMS_SPL_comp_re20uPa(iF,:) = ...
-    call_rms_dB(iF,:) + TL_dB_RMS_freq(iF) - mic_sens_dB_RMS_freq(iF) +...
+    call_rms_dB(iF,:) + TL_dB_RMS_freq(iF,:) - mic_sens_dB_RMS_freq(iF,:) +...
     20*log10(1/20e-6) - data.mic_gain';
 end
 

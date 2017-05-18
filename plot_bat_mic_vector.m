@@ -104,16 +104,22 @@ if isappdata(0,'track_gui_handles')
       plot_mic_nums=1;
       
       call_I = nan(1,data.mic_data.num_ch_in_file);
-      rb_log = findobj('tag','rb_log');
       for iM=mic_num
-        freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
-        [~,fidx] = min(abs(freq-freq_desired*1e3));
-        if get(rb_log,'value')
-          call_I(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
-        else
-          call_I(iM) = ...
-            10.^(data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx)/10);
+        if strcmp(gui_op.linlog,'rb_RMS') %use RMS
+          freq = data.proc.call_rms_fcenter{gui_op.current_call_idx,iM};
+          [~,fidx] = min(abs(freq-freq_wanted));
+          call_dB(iM) = data.proc.call_RMS_SPL_comp_re20uPa{gui_op.current_call_idx,iM}(fidx);
+        else %use the PSD
+          freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
+          [~,fidx] = min(abs(freq-freq_wanted));
+          call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
         end
+      end
+      
+      if strcmp(gui_op.linlog,'rb_lin')
+        call_I = 10.^(call_dB/10);
+      else
+        call_I = call_dB;
       end
       
       ch_ex = data.proc.ch_ex;

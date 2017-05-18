@@ -48,9 +48,15 @@ for ff=1:length(freqs)
   
   call_dB = nan(1,data.mic_data.num_ch_in_file);
   for iM=1:data.mic_data.num_ch_in_file
-    freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
-    [~,fidx] = min(abs(freq-freq_wanted));
-    call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+    if strcmp(gui_op.linlog,'rb_RMS') %use RMS
+      freq = data.proc.call_rms_fcenter{gui_op.current_call_idx,iM};
+      [~,fidx] = min(abs(freq-freq_wanted));
+      call_dB(iM) = data.proc.call_RMS_SPL_comp_re20uPa{gui_op.current_call_idx,iM}(fidx);
+    else %use the PSD
+      freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
+      [~,fidx] = min(abs(freq-freq_wanted));
+      call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+    end
   end
   
   ch_ex_sig = find(isnan(call_dB));  % low quality channel from call extraction function

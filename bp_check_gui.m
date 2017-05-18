@@ -176,9 +176,15 @@ gui_op.interp = handles.interp_radio_grp.SelectedObject.Tag;  % interpolation se
 freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
 call_dB = nan(data.mic_data.num_ch_in_file,1);
 for iM=1:data.mic_data.num_ch_in_file
+  if strcmp(gui_op.linlog,'rb_RMS') %use RMS
+    freq = data.proc.call_rms_fcenter{gui_op.current_call_idx,iM};
+    [~,fidx] = min(abs(freq-freq_wanted));
+    call_dB(iM) = data.proc.call_RMS_SPL_comp_re20uPa{gui_op.current_call_idx,iM}(fidx);
+  else %use the PSD
     freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
     [~,fidx] = min(abs(freq-freq_wanted));
     call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+  end
 end
 gui_op.caxis_raw_default = [floor(min(min(call_dB))/5)*5, ceil(max(max(call_dB))/5)*5];
 gui_op.caxis_norm_default = [floor(-range(call_dB)/5)*5, 0];
@@ -507,6 +513,16 @@ function edit_bp_freq_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 gui_op = getappdata(0,'gui_op');
 data = getappdata(0,'data');
+
+freq_wanted = str2double(get(hObject,'String'));
+if strcmp(gui_op.linlog,'rb_RMS') %use RMS
+  freq = data.proc.call_rms_fcenter{gui_op.current_call_idx,1}/1e3;
+else %use the PSD
+  freq = data.proc.call_freq_vec{gui_op.current_call_idx,1}/1e3;
+end
+[~,fidx] = min(abs(freq-freq_wanted));
+set(hObject,'String',freq(fidx));
+
 update_caxis(handles);     % update color axis for bp display
 if isfield(data.proc,'call_psd_dB_comp_re20uPa_withbp')  % if data already loaded
   update_bp_plots(handles,gui_op);
