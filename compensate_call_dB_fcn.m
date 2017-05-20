@@ -74,19 +74,21 @@ max_freq_idx = sub2ind(size(A), max_freq, 1:size(A,2));
 
 TL_dB_ch = TL_dB(max_freq_idx);
 mic_sens_dB_mean_ch = mic_sens_dB(max_freq_idx);
-call_p2p_SPL_comp_re20uPa = call_p2p_ch_dB + TL_dB_ch - mic_sens_dB_mean_ch +...
+bp_compensation_mean_ch = bp_compensation(max_freq_idx);
+call_p2p_SPL_comp_re20uPa = call_p2p_ch_dB + TL_dB_ch - mic_sens_dB_mean_ch - bp_compensation_mean_ch+...
   20*log10(1/20e-6) - data.mic_gain';
 
 % call SPL using RMS
 freqs_RMS=data.proc.call_rms_fcenter{iC,1};
 TL_dB_RMS_freq = interp1(call_freq,TL_dB,freqs_RMS);
 mic_sens_dB_RMS_freq = interp1(call_freq,mic_sens_dB,freqs_RMS);
+bp_compensation_RMS_freq = interp1(call_freq,bp_compensation,freqs_RMS);
 
 call_rms_dB = cell2mat(data.proc.call_rms_dB(iC,:)')';
 call_RMS_SPL_comp_re20uPa=nan(length(freqs_RMS),size(data.proc.call_rms_fcenter,2));
 for iF = 1:length(freqs_RMS)
   call_RMS_SPL_comp_re20uPa(iF,:) = ...
-    call_rms_dB(iF,:) + TL_dB_RMS_freq(iF,:) - mic_sens_dB_RMS_freq(iF,:) +...
+    call_rms_dB(iF,:) + TL_dB_RMS_freq(iF,:) - mic_sens_dB_RMS_freq(iF,:) - bp_compensation_RMS_freq +...
     20*log10(1/20e-6) - data.mic_gain';
 end
 
