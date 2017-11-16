@@ -1,16 +1,24 @@
-function plot_bp_2d(handles)
+function plot_bp_2d(handles,freq_wanted)
 % Plot interpolated beampattern on azimuth-elevation plane
 
 % Load data
 data = getappdata(0,'data');
 gui_op = getappdata(0,'gui_op');
 mic_to_bat_angle = squeeze(data.proc.mic_to_bat_angle(gui_op.current_call_idx,:,:));
-freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+if nargin == 1 || isempty(freq_wanted) %allowing optional passing in of freq
+  freq_wanted = str2double(get(handles.edit_bp_freq,'String'))*1e3;  % beampattern frequency [Hz]
+end
 call_dB = nan(1,data.mic_data.num_ch_in_file);
 for iM=1:data.mic_data.num_ch_in_file
+  if strcmp(gui_op.linlog,'rb_RMS') %use RMS
+    freq = data.proc.call_rms_fcenter{gui_op.current_call_idx,iM};
+    [~,fidx] = min(abs(freq-freq_wanted));
+    call_dB(iM) = data.proc.call_RMS_SPL_comp_re20uPa{gui_op.current_call_idx,iM}(fidx);
+  else %use the PSD
     freq = data.proc.call_freq_vec{gui_op.current_call_idx,iM};
     [~,fidx] = min(abs(freq-freq_wanted));
     call_dB(iM) = data.proc.call_psd_dB_comp_re20uPa_withbp{gui_op.current_call_idx,iM}(fidx);
+  end
 end
 
 % Check for channels to be excluded
@@ -26,7 +34,8 @@ ch_good_loc = ~isnan(data.mic_loc(:,1))';
 
 % Interpolation
 mic_num = 1:data.mic_data.num_ch_in_file;
-angle_notnanidx = ~ismember(1:data.mic_data.num_ch_in_file,union(ch_ex_manual,ch_ex_sig)) & ch_good_loc;
+angle_notnanidx = ~ismember(1:data.mic_data.num_ch_in_file,...
+  union(ch_ex_manual,ch_ex_sig)) & ch_good_loc;
 az = mic_to_bat_angle(angle_notnanidx,1);
 el = mic_to_bat_angle(angle_notnanidx,2);
 
@@ -35,7 +44,8 @@ maxref = max(call_dB(angle_notnanidx));
 if strcmp(gui_op.interp,'rb_natural')  % natural neighbor interpolation
     vq = griddata(az,el,call_dB(angle_notnanidx),azq,elq,'natural');
 elseif strcmp(gui_op.interp,'rb_rbf')  % radial basis function interpolation
-    vq = rbfinterp([azq(:)';elq(:)'],rbfcreate([az(:)';el(:)'],call_dB(angle_notnanidx),'RBFFunction','multiquadrics'));
+    vq = rbfinterp([azq(:)';elq(:)'],rbfcreate([az(:)';el(:)'],...
+      call_dB(angle_notnanidx),'RBFFunction','multiquadrics'));
     vq = reshape(vq,size(azq));
 end
 vq_norm = vq-maxref;
@@ -57,42 +67,58 @@ elqm(isnan(vq_norm)) = NaN;
 azqm = azq;
 azqm(isnan(vq_norm)) = NaN;
 
-axes(handles.axes_bp);
-cla(handles.axes_bp,'reset');
-axesm eckert4;
-framem('fedgecolor',200*ones(1,3)/255,'flonlimit',[-120 120]);
-gridm('gcolor',190*ones(1,3)/255,'glinestyle','-');
-axis off
-if get(handles.checkbox_norm,'Value')==0  % if "normalized" not checked
-    geoshow(elqm/pi*180,azqm/pi*180,vq,'displaytype','texturemap');
-    cc = [gui_op.caxis_raw_current(1) gui_op.caxis_raw_current(2)];
-else
-    geoshow(elqm/pi*180,azqm/pi*180,vq_norm,'displaytype','texturemap');
-    cc = [gui_op.caxis_norm_current(1) gui_op.caxis_norm_current(2)];
+if get(handles.show_bp_plot,'Value')
+  if isempty(handles.axes_bp.Children)
+    axes(handles.axes_bp);
+    cla(handles.axes_bp,'reset');
+    axesm eckert4;
+  else
+    axes(handles.axes_bp);
+    cla(handles.axes_bp)
+  end
+  framem('fedgecolor',200*ones(1,3)/255,'flonlimit',[-120 120]);
+  gridm('gcolor',190*ones(1,3)/255,'glinestyle','-');
+  axis off
+  if get(handles.checkbox_norm,'Value')==0  % if "normalized" not checked
+      geoshow(elqm/pi*180,azqm/pi*180,vq,'displaytype','texturemap');
+      cc = [gui_op.caxis_raw_current(1) gui_op.caxis_raw_current(2)];
+  else
+      geoshow(elqm/pi*180,azqm/pi*180,vq_norm,'displaytype','texturemap');
+      cc = [gui_op.caxis_norm_current(1) gui_op.caxis_norm_current(2)];
+  end
+  contourm(elq/pi*180,azq/pi*180,vq_norm,-3,'w','linewidth',2);
+  textm(el/pi*180,az/pi*180,num2str(mic_num(angle_notnanidx)'),...
+    'horizontalalignment','center');
+  caxis(cc);
+  colorbar('southoutside');
+  tightmap
 end
-contourm(elq/pi*180,azq/pi*180,vq_norm,-3,'w','linewidth',2);
-textm(el/pi*180,az/pi*180,num2str(mic_num(angle_notnanidx)'),'horizontalalignment','center');
-caxis(cc);
-colorbar('southoutside');
-tightmap
 
 vq_norm_min = min(vq_norm(:));
 contour_vec = 0:-3:(floor(vq_norm_min/3)-1)*3;
 cvec_min_idx = find(contour_vec-vq_norm_min<0,1,'first');
 
-axes(handles.axes_bp_contour);
-cla(handles.axes_bp_contour,'reset');
-axesm eckert4;
-framem('fedgecolor',200*ones(1,3)/255,'flonlimit',[-180 180]);
-gridm('gcolor',190*ones(1,3)/255,'glinestyle','-');
-axis off
+
+if isempty(handles.axes_bp_contour.Children)
+  axes(handles.axes_bp_contour);
+  cla(handles.axes_bp_contour,'reset');
+  axesm eckert4;
+  framem('fedgecolor',200*ones(1,3)/255,'flonlimit',[-180 180]);
+  gridm('gcolor',190*ones(1,3)/255,'glinestyle','-');
+  axis off
+else
+  axes(handles.axes_bp_contour);
+end
 contourfm(elq/pi*180,azq/pi*180,vq_norm,contour_vec(1:cvec_min_idx),'w');
 hold on
-textm(el/pi*180,az/pi*180,num2str(mic_num(angle_notnanidx)'),'horizontalalignment','center','fontsize',10);
+textm(el/pi*180,az/pi*180,num2str(mic_num(angle_notnanidx)'),...
+  'horizontalalignment','center','fontsize',10);
 colorbar('southoutside','ticks',fliplr(contour_vec(1:cvec_min_idx)));
 colormap(handles.axes_bp_contour,parula(cvec_min_idx-1));
 caxis(handles.axes_bp_contour,[contour_vec(cvec_min_idx) 0]);
 tightmap
+hold off
+title(['Freq: ' num2str(round(freq_wanted/1e3))])
 
 % % Plot interpolated beampattern ==========================
 % axes(handles.axes_bp);

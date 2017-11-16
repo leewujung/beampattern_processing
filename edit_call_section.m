@@ -260,16 +260,53 @@ se_idx = gui_call_op.se_idx(iM,:);  % new segment start/end index
 if any(isnan(se_idx))
     call_short = NaN;
 else
-    call_short = gui_call_op.call_align(se_idx(1):se_idx(2),gui_call_op.curr_ch)';  % extract new short call segment
+    call_short = gui_call_op.call_align(se_idx(1):se_idx(2),gui_call_op.curr_ch);  % extract new short call segment
 end
-w = tukeywin(length(call_short),tukeywin_prop);
-call_short_taper = call_short.*w';  % taper call for spectrum estimation
+w = tukeywin(size(call_short,1),tukeywin_prop);
+call_short_taper = call_short.*repmat(w,1,size(call_short,2));  % taper call for spectrum estimation
+
 call_fft = fft(call_short_taper);
-call_freq_vec = linspace(0,data.mic_data.fs/2,round((length(call_fft)+1)/2));
-call_fft_len = length(call_freq_vec);
-% call_psd = 2*abs(call_fft(1:call_fft_len)).^2/(length(call_fft)*data.mic_data.fs);
-call_psd = 2*abs(call_fft(1:call_fft_len)).^2;
-call_psd_dB = 10*log10(call_psd);
+call_freq_vec = linspace(0,data.mic_data.fs/2,round((size(call_short_taper,1)+1)/2));
+if ~isfield(data.param,'PSD_type') || strcmp(data.param.PSD_type,'FFT')
+    % Calculate fft ================================
+    call_fft_len = length(call_freq_vec);
+    call_psd = 2*abs(call_fft(1:call_fft_len,:)).^2/(length(call_fft)*data.mic_data.fs);
+    % call_psd = 2*abs(call_fft(1:call_fft_len,:)).^2;
+    call_psd_dB = 10*log10(call_psd);
+elseif strcmp(data.param.PSD_type,'pwelch')
+    if length(call_short_taper) > 128
+        call_psd=pwelch(call_short_taper,128,120,call_freq_vec,data.mic_data.fs);
+        call_psd_dB = 10*log10(call_psd);
+    else
+        disp(['call problematic on call #' num2str(iC)])
+        call_psd=zeros(0,size(call_short_taper,2));
+        call_psd_dB =zeros(0,size(call_short_taper,2));
+    end
+end
+
+
+%calculate RMS ==================================
+%generating 1/3 octave bands for filter bank for RMS
+N = 6; %order
+fcenter = data.param.RMS_freq_vec;
+fs = data.mic_data.fs;
+fd = 2^(1/6);
+fupper = fcenter * fd;
+flower = fcenter / fd;
+
+[a,b] = deal(cell(length(data.param.RMS_freq_vec),1));
+for iF =1:length(fcenter)
+  [b{iF},a{iF}]=butter(N,[flower(iF) fupper(iF)]/(fs/2),'bandpass');
+end
+
+%calc RMS across freq bands
+[call_rms,call_rms_dB]=deal(nan(length(fcenter),size(call_short,2)));
+for iF =1:length(fcenter)
+  sig_filt = filter(b{iF},a{iF},call_short);
+  call_rms(iF,:) = sqrt(mean(sig_filt.^2));
+  call_rms_dB(iF,:) = 20*log10(call_rms(iF,:));
+end
+% call_rms = sqrt(mean(call_short_taper.^2));
 
 data.proc.call_align_short{iC,iM} = call_short;
 data.proc.call_align_short_se_idx(iC,iM,:) = se_idx;  % update start/end idx for this channel
@@ -277,7 +314,9 @@ data.proc.call_fft{iC,iM} = call_fft;  % call spectrum
 data.proc.call_freq_vec{iC,iM} = call_freq_vec;  % frequency vector for call spectrum
 data.proc.call_psd_raw_linear{iC,iM} = call_psd;  % spectrum of extracted calls, linear scale
 data.proc.call_psd_raw_dB{iC,iM} = call_psd_dB;   % spectrum of extracted calls, dB scale
-
+data.proc.call_rms{iC,iM} = call_rms';
+data.proc.call_rms_dB{iC,iM} = call_rms_dB';
+data.proc.call_rms_fcenter{iC,iM} = fcenter; %freq vector for RMS
 
 
 
@@ -315,12 +354,33 @@ call_psd_dB_comp_re20uPa_nobp = call_psd_dB_comp_nobp + 20*log10(1/20e-6) - gain
 call_psd_dB_comp_re20uPa_withbp = call_psd_dB_comp_withbp + 20*log10(1/20e-6) - gain_dB_fac;
 
 % Call SPL using p2p voltage
-[call_max_p2p,max_p2p_ch_idx] = max(cellfun(@max,data.proc.call_align_short(iC,:)));
-TL_dB_mean = mean(TL_dB);
-mic_sens_dB_mean = mean(mic_sens_dB);
-call_p2p_max_ch_dB = 20*log10(call_max_p2p);
-call_p2p_SPL_comp_re20uPa = call_p2p_max_ch_dB + TL_dB_mean - mic_sens_dB_mean +...
-                            20*log10(1/20e-6) - data.mic_gain(max_p2p_ch_idx);
+ch_data = data.proc.call_align_short{iC,iM}';
+ch_p2p = max(ch_data,[],2) + ...
+  abs(min(ch_data,[],2));
+call_p2p_ch_dB = 20*log10(ch_p2p);
+
+%using pwelch to calc. the max freq in the data
+A=pwelch(ch_data',128,120,call_freq,data.mic_data.fs);
+[~,max_freq_idx]=max(A); %where the peak should be...
+% max_freq_idx = sub2ind(size(A), max_freq, 1:size(A,2));
+
+TL_dB_ch = TL_dB(max_freq_idx);
+mic_sens_dB_mean_ch = mic_sens_dB(max_freq_idx);
+call_p2p_SPL_comp_re20uPa = call_p2p_ch_dB + TL_dB_ch - mic_sens_dB_mean_ch +...
+  20*log10(1/20e-6) - data.mic_gain(iM);
+
+freqs_RMS=data.proc.call_rms_fcenter{iC,1};
+TL_dB_RMS_freq = interp1(call_freq,TL_dB,freqs_RMS);
+mic_sens_dB_RMS_freq = interp1(call_freq,mic_sens_dB,freqs_RMS);
+
+call_rms_dB = data.proc.call_rms_dB{iC,iM};
+call_RMS_SPL_comp_re20uPa=nan(1,length(freqs_RMS));
+for iF = 1:length(freqs_RMS)
+  call_RMS_SPL_comp_re20uPa(iF) = ...
+    call_rms_dB(iF) + TL_dB_RMS_freq(iF) - mic_sens_dB_RMS_freq(iF) +...
+    20*log10(1/20e-6) - data.mic_gain(iM);
+end
+
 
 % Save data
 data.param.alpha{iC,iM} = alpha;
@@ -334,9 +394,8 @@ data.proc.call_psd_dB_comp_nobp{iC,iM} = call_psd_dB_comp_nobp;
 data.proc.call_psd_dB_comp_withbp{iC,iM} = call_psd_dB_comp_withbp;
 data.proc.call_psd_dB_comp_re20uPa_nobp{iC,iM} = call_psd_dB_comp_re20uPa_nobp;
 data.proc.call_psd_dB_comp_re20uPa_withbp{iC,iM} = call_psd_dB_comp_re20uPa_withbp;
-data.proc.call_p2p_SPL_comp_re20uPa(iC) = call_p2p_SPL_comp_re20uPa;
-
-
+data.proc.call_p2p_SPL_comp_re20uPa(iC,iM) = call_p2p_SPL_comp_re20uPa;
+data.proc.call_RMS_SPL_comp_re20uPa{iC,iM} = call_RMS_SPL_comp_re20uPa;
 
 
 % --- Executes on button press in button_ch_next.
